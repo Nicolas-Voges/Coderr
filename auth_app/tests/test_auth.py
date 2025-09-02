@@ -5,27 +5,37 @@ from rest_framework.test import APIClient, APITestCase
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 
-class RegistrationTests(APITestCase):       
+class RegistrationTests(APITestCase):
 
-    def test_registration_post(self):
-        url = reverse('registration')
-        data = {
-            "username": "TestUser",
+    def setUp(self):
+        self.url = reverse('registration')
+        self.username = "TestUser"
+        self.data = {
+            "username": self.username,
             "email": "test@user.de",
             "password": "examplePassword",
             "repeated_password": "examplePassword",
             "type": "customer"
         }
 
-        response = self.client.post(url, data, format='json')
+    def test_post_success(self):
+        response = self.client.post(self.url, self.data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn('token', response.data)
         self.assertIn('user_id', response.data)
-        self.assertEqual(response.data['username'], data['username'])
-        self.assertEqual(response.data['email'], data['email'])
+        self.assertEqual(response.data['username'], self.data['username'])
+        self.assertEqual(response.data['email'], self.data['email'])
 
-        response = self.client.post(url, data, format='json')
+        user = User.objects.get(username=self.username)
+        token = Token.objects.get(user=user)
+
+        self.assertEqual(token.key, response.data['token'])
+
+
+    def test_post_duplicate_fails(self):
+        self.client.post(self.url, self.data, format='json')
+        response = self.client.post(self.url, self.data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
