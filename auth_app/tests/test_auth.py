@@ -28,3 +28,29 @@ class RegistrationTests(APITestCase):
         response = self.client.post(url, data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class LoginTest(APITestCase):
+
+    def setUp(self):
+        self.username = "exampleUsername"
+        self.password = "examplePassword"
+        self.email = "example@mail.de"
+        self.user = User.objects.create_user(username=self.username, password=self.password, email=self.email)
+        self.token = Token.objects.create(user=self.user)
+        self.url = reverse('login')
+
+
+
+    def test_login_post(self):
+        data = {
+            "username": self.username,
+            "password": self.password
+        }
+        response = self.client.post(self.url, data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.token.key, response.data['token'])
+        self.assertEqual(self.user.id, response.data['user_id'])
+        self.assertEqual(self.username, response.data['username'])
+        self.assertEqual(self.email, response.data['email'])
