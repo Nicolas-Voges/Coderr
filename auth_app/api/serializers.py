@@ -28,7 +28,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
             'type',
             'id'
         ]
-        extra_kwargs = {'password': {'write_only': True}}
+        extra_kwargs = {'password': {'write_only': True}, 'repeated_password': {'write_only': True}}
 
     
     def validate(self, validated_data):
