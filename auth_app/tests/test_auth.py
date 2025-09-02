@@ -18,6 +18,7 @@ class RegistrationTests(APITestCase):
             "type": "customer"
         }
 
+
     def test_post_success(self):
         response = self.client.post(self.url, self.data, format='json')
 
@@ -40,7 +41,7 @@ class RegistrationTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
-class LoginTest(APITestCase):
+class LoginTests(APITestCase):
 
     def setUp(self):
         self.username = "exampleUsername"
@@ -51,8 +52,7 @@ class LoginTest(APITestCase):
         self.url = reverse('login')
 
 
-
-    def test_login_post(self):
+    def test_post_success(self):
         data = {
             "username": self.username,
             "password": self.password
@@ -64,3 +64,25 @@ class LoginTest(APITestCase):
         self.assertEqual(self.user.id, response.data['user_id'])
         self.assertEqual(self.username, response.data['username'])
         self.assertEqual(self.email, response.data['email'])
+
+
+    def test_post_fails_user_not_exists(self):
+        data = {
+            "username": 'WRONG',
+            "password": self.password
+        }
+
+        response = self.client.post(self.url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+    def test_post_fails_wrong_password(self):
+        data = {
+            "username": self.username,
+            "password": 'WRONG'
+        }
+
+        response = self.client.post(self.url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
