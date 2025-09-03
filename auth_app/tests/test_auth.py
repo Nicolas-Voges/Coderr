@@ -93,7 +93,6 @@ class LoginTests(APITestCase):
 class ProfileTests(APITestCase):
 
     def setUp(self):
-        self.url_detail = reverse('profile-detail')
         self.url_business = reverse('profile_business-list')
         self.url_customer = reverse('profile_customer-list')
         self.username = "exampleUsername"
@@ -126,6 +125,7 @@ class ProfileTests(APITestCase):
             type="business",
             email=self.email,
         )
+        self.url_detail = reverse('profile-detail', kwargs={'pk': self.profile.pk})
 
 
     def test_get_detail_success(self):
@@ -153,5 +153,51 @@ class ProfileTests(APITestCase):
 
     def test_get_detail_fails_not_authorized(self):
         response = self.client.get(self.url_detail)
+
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+    def test_get_detail_fails_user_not_exists(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+        url = reverse('profile-detail', kwargs={'pk': 9999})
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+    def test_patch_detail_success(self):
+        image_name = "test_image.jpg"
+        image = SimpleUploadedFile(
+            name=image_name,
+            content=b"fake image content",
+            content_type="image/jpeg"
+        )
+        data = {
+            "first_name": "Max",
+            "last_name": "Mustermann",
+            "location": "Berlin",
+            "tel": "987654321",
+            "description": "Updated business description",
+            "working_hours": "10-18",
+            "email": "new_email@business.de",
+            "file": image
+        }
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+
+        response = self.client.patch(self.url_detail, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['user'], self.user.id)
+        self.assertEqual(response.data['username'], self.username)
+        self.assertEqual(response.data['first_name'], data['first_name'])
+        self.assertEqual(response.data['last_name'], data['last_name'])
+        self.assertEqual(response.data['location'], data['location'])
+        self.assertEqual(response.data['tel'], data['tel'])
+        self.assertEqual(response.data['description'], data['description'])
+        self.assertEqual(response.data['working_hours'], data['working_hours'])
+        self.assertEqual(response.data['email'], data['email'])
+        self.assertEqual(response.data['type'], self.profile.type)
+        self.assertTrue(response.data['file'].name.endswith(image_name))
+        self.assertIsInstance(response.data['created_at'], str, msg='First name is not a string!')
 
