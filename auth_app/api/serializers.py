@@ -5,11 +5,60 @@ from collections import OrderedDict
 from auth_app.models import Profile
 
 class ProfileSerializer(serializers.ModelSerializer):
-    
+    username = serializers.CharField(source='user.username', read_only=True)
+    first_name = serializers.CharField(source='user.first_name', read_only=True)
+    last_name = serializers.CharField(source='user.last_name', read_only=True)
 
     class Meta:
         model = Profile
-        fields = '__all__'
+        fields = [
+            {
+                "user",
+                "username",
+                "first_name",
+                "last_name",
+                "file",
+                "location",
+                "tel",
+                "description",
+                "working_hours",
+                "type",
+                "email",
+                "created_at",
+                "uploaded_at"
+            }
+        ]
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        request = self.context.get('request')
+        path = request.path
+        type = rep.get('type')
+        if type == 'customer':
+            ordered = {
+                "user": rep.get('user.id'),
+                "username": rep.get('user.username'),
+                "first_name": rep.get('user.first_name'),
+                "last_name": rep.get('user.last_name'),
+                "file": rep.get('file'),
+                "uploaded_at": rep.get('uploaded_at'),
+                "type": type
+            }
+            return ordered
+        else:
+            ordered = {
+                "user": rep.get('user.id'),
+                "username": rep.get('user.username'),
+                "first_name": rep.get('user.first_name'),
+                "last_name": rep.get('user.last_name'),
+                "file": rep.get('file'),
+                "location": rep.get('location'),
+                "tel": rep.get('tel'),
+                "description": rep.get('description'),
+                "working_hours": rep.get('working_hours'),
+                "type": type
+            }
+            return ordered
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
