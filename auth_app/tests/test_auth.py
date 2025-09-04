@@ -203,7 +203,7 @@ class ProfileTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
-    def test_patch_detail_fails_not_authorized(self):
+    def test_patch_detail_fails_user_not_owner(self):
         second_user = User.objects.create_user(username='Test2', password='Test12§$')
         second_token = Token.objects.create(user=second_user)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + second_token.key)
