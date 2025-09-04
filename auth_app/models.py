@@ -9,7 +9,7 @@ class UserType(models.TextChoices):
     business = 'business', 'Business'
 
 class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='user')
     file = models.ImageField(upload_to='user_images/')
     location = models.CharField(max_length=30)
     tel = PhoneNumberField()
@@ -18,3 +18,7 @@ class Profile(models.Model):
     type = models.CharField(max_length=20, choices=UserType.choices, default=UserType.customer)
     email = models.EmailField()
     created_at = models.DateTimeField()
+    uploaded_at = models.DateTimeField()
+
+    def __str__(self):
+        return f"Profile {self.id} from user {self.user.id}"
