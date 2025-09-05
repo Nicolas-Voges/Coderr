@@ -6,6 +6,7 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
 from .serializers import RegistrationSerializer, ProfileSerializer
 from auth_app.models import Profile
+from .permissions import IsOwner
 
 class RegistrationView(generics.CreateAPIView):
 
@@ -56,13 +57,13 @@ class LoginView(ObtainAuthToken):
         
 
 class ProfileUpdateRetriveView(generics.RetrieveUpdateAPIView):
-    permission_classes = [IsAuthenticated] # IsOwner
+    permission_classes = [IsAuthenticated, IsOwner]
     serializer_class = ProfileSerializer
     queryset = Profile.objects.all()
 
 
 class ProfileListView(generics.ListAPIView):
-    permission_classes = [IsAuthenticated] # IsOwner
+    permission_classes = [IsAuthenticated]
     serializer_class = ProfileSerializer
     queryset = Profile.objects.all()
 
