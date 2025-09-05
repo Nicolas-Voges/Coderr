@@ -16,7 +16,6 @@ class Profile(models.Model):
     description = models.CharField(max_length=255)
     working_hours = models.CharField(max_length=20)
     type = models.CharField(max_length=20, choices=UserType.choices, default=UserType.customer)
-    email = models.EmailField()
     created_at = models.DateTimeField()
     uploaded_at = models.DateTimeField(null=True, blank=True)
 
