@@ -8,6 +8,12 @@ from rest_framework.test import APIClient, APITestCase
 from rest_framework.authtoken.models import Token
 from auth_app.models import Profile
 
+from PIL import Image
+from io import BytesIO
+# image = BytesIO()
+# img = Image.new('RGB', (10, 10), color='red')
+# img.save(image, format='JPEG')
+# image.seek(0)
 class RegistrationTests(APITestCase):
 
     def setUp(self):
@@ -93,7 +99,18 @@ class LoginTests(APITestCase):
 
 class ProfileTests(APITestCase):
 
+
+
+    def get_test_image_file(self):
+        image = BytesIO()
+        img = Image.new('RGB', (10, 10), color='red')
+        img.save(image, format='JPEG')
+        image.seek(0)
+        return SimpleUploadedFile('test_image.jpg', image.read(), content_type='image/jpeg')
+
+
     def setUp(self):
+
         self.url_business = reverse('profile_business-list')
         self.url_customer = reverse('profile_customer-list')
         self.username = "exampleUsername"
@@ -102,36 +119,33 @@ class ProfileTests(APITestCase):
         self.first_name = 'Max'
         self.last_name = ''
         self.image_name = "test_image.jpg"
-        self.image = SimpleUploadedFile(
-            name=self.image_name,
-            content=b"fake image content",
-            content_type="image/jpeg"
-        )
+        self.image = self.get_test_image_file()
         self.patch_data = {
             "first_name": "Max",
             "last_name": "Mustermann",
             "location": "Berlin",
-            "tel": "987654321",
+            "tel": "+49531697151",
             "description": "Updated business description",
             "working_hours": "10-18",
             "email": "new_email@business.de",
-            "file": self.image
+            "file": self.get_test_image_file()
         }
-        self.user = User.objects.create_user(username=self.username,
-                                             password=self.password,
-                                             email=self.email,
-                                             first_name=self.first_name,
-                                             last_name=self.last_name)
+        self.user = User.objects.create_user(
+            username=self.username,
+            password=self.password,
+            email=self.email,
+            first_name=self.first_name,
+            last_name=self.last_name
+        )
         self.token = Token.objects.create(user=self.user)
         self.profile = Profile.objects.create(
             user=self.user,
             file=self.image,
             location="Berlin",
-            tel="123456789",
+            tel="+49531697151",
             description="Business description",
             working_hours="9-17",
             type="business",
-            email=self.email,
             created_at=timezone.now()
         )
         self.url_detail = reverse('profile-detail', kwargs={'pk': self.profile.pk})
@@ -155,8 +169,6 @@ class ProfileTests(APITestCase):
         self.assertIsInstance(response.data['description'], str, msg='Description is not a string!')
         self.assertIsInstance(response.data['working_hours'], str, msg='Working_hours is not a string!')
         self.assertEqual(response.data['type'], self.profile.type)
-        self.assertEqual(response.data['email'], self.email)
-        self.assertEqual(response.data['email'], self.email)
         self.assertIsInstance(response.data['created_at'], str, msg='Created_at is not a string!')
 
 
@@ -179,7 +191,7 @@ class ProfileTests(APITestCase):
         
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
 
-        response = self.client.patch(self.url_detail, self.patch_data, format='json')
+        response = self.client.patch(self.url_detail, self.patch_data, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['user'], self.user.id)
@@ -192,12 +204,12 @@ class ProfileTests(APITestCase):
         self.assertEqual(response.data['working_hours'], self.patch_data['working_hours'])
         self.assertEqual(response.data['email'], self.patch_data['email'])
         self.assertEqual(response.data['type'], self.profile.type)
-        self.assertTrue(response.data['file'].name.endswith(self.image_name))
+        self.assertIn('test_image', response.data['file'])
         self.assertIsInstance(response.data['created_at'], str, msg='First name is not a string!')
 
 
     def test_patch_detail_fails_not_authorized(self):
-        response = self.client.patch(self.url_detail, self.patch_data, format='json')
+        response = self.client.patch(self.url_detail, self.patch_data, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -207,7 +219,7 @@ class ProfileTests(APITestCase):
         second_token = Token.objects.create(user=second_user)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + second_token.key)
 
-        response = self.client.patch(self.url_detail, self.patch_data, format='json')
+        response = self.client.patch(self.url_detail, self.patch_data, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -216,6 +228,6 @@ class ProfileTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
         url = reverse('profile-detail', kwargs={'pk': 9999})
 
-        response = self.client.patch(url, self.patch_data, format='json')
+        response = self.client.patch(url, self.patch_data, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

@@ -49,10 +49,11 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         self.update_user(instance=instance, validated_data=validated_data)
-        print(f"FILE: {validated_data.get("file")}")
+
         if not validated_data.get("file") == None:
             instance.file = validated_data.get("file", "")
             instance.uploaded_at = timezone.now()
+            
         instance.location = validated_data.get("location", instance.location)
         instance.tel = validated_data.get("tel", instance.tel)
         instance.description = validated_data.get("description", instance.description)
@@ -94,7 +95,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             }
         
         if view and view.__class__.__name__ == "ProfileUpdateRetriveView" or request.method == 'PATCH':
-            ordered['email']=self.set_null_to_empty_str(rep.get('email'))
+            ordered['email']=instance.user.email
             ordered['created_at']=self.set_null_to_empty_str(rep.get('created_at'))
             return ordered
         else:
