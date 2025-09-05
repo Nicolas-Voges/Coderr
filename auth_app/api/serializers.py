@@ -8,56 +8,70 @@ class ProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
     first_name = serializers.CharField(source='user.first_name', read_only=True)
     last_name = serializers.CharField(source='user.last_name', read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+    uploaded_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = Profile
         fields = [
-            {
-                "user",
-                "username",
-                "first_name",
-                "last_name",
-                "file",
-                "location",
-                "tel",
-                "description",
-                "working_hours",
-                "type",
-                "email",
-                "created_at",
-                "uploaded_at"
-            }
+            "user",
+            "username",
+            "first_name",
+            "last_name",
+            "file",
+            "location",
+            "tel",
+            "description",
+            "working_hours",
+            "type",
+            "email",
+            "created_at",
+            "uploaded_at"
         ]
+
+
+    def set_null_to_empty_str(self, value):
+        if value == None:
+            return ""
+        else:
+            return value
+
+
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
-        request = self.context.get('request')
-        path = request.path
+        view = self.context.get("view")
         type = rep.get('type')
         if type == 'customer':
             ordered = {
-                "user": rep.get('user.id'),
-                "username": rep.get('user.username'),
-                "first_name": rep.get('user.first_name'),
-                "last_name": rep.get('user.last_name'),
-                "file": rep.get('file'),
+                "user": rep.get('user'),
+                "username": self.set_null_to_empty_str(rep.get('username')),
+                "first_name": self.set_null_to_empty_str(rep.get('first_name')),
+                "last_name": self.set_null_to_empty_str(rep.get('last_name')),
+                "file": self.set_null_to_empty_str(rep.get('file')),
                 "uploaded_at": rep.get('uploaded_at'),
                 "type": type
             }
-            return ordered
         else:
             ordered = {
-                "user": rep.get('user.id'),
-                "username": rep.get('user.username'),
-                "first_name": rep.get('user.first_name'),
-                "last_name": rep.get('user.last_name'),
-                "file": rep.get('file'),
-                "location": rep.get('location'),
-                "tel": rep.get('tel'),
-                "description": rep.get('description'),
-                "working_hours": rep.get('working_hours'),
+                "user": rep.get('user'),
+                "username": self.set_null_to_empty_str(rep.get('username')),
+                "first_name": self.set_null_to_empty_str(rep.get('first_name')),
+                "last_name": self.set_null_to_empty_str(rep.get('last_name')),
+                "file": self.set_null_to_empty_str(rep.get('file')),
+                "location": self.set_null_to_empty_str(rep.get('location')),
+                "tel": self.set_null_to_empty_str(rep.get('tel')),
+                "description": self.set_null_to_empty_str(rep.get('description')),
+                "working_hours": self.set_null_to_empty_str(rep.get('working_hours')),
                 "type": type
             }
+        
+        if view and view.__class__.__name__ == "ProfileUpdateRetriveView":
+            ordered['email']=self.set_null_to_empty_str(rep.get('email'))
+            ordered['created_at']=self.set_null_to_empty_str(rep.get('created_at'))
+            return ordered
+        else:
             return ordered
 
 
