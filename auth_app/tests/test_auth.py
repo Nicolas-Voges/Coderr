@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 from rest_framework.authtoken.models import Token
@@ -123,10 +124,7 @@ class ProfileTests(APITestCase):
                                              last_name=self.last_name)
         self.token = Token.objects.create(user=self.user)
         self.profile = Profile.objects.create(
-            user=self.user.id,
-            username=self.username,
-            first_name=self.first_name,
-            last_name=self.last_name,
+            user=self.user,
             file=self.image,
             location="Berlin",
             tel="123456789",
@@ -134,6 +132,7 @@ class ProfileTests(APITestCase):
             working_hours="9-17",
             type="business",
             email=self.email,
+            created_at=timezone.now()
         )
         self.url_detail = reverse('profile-detail', kwargs={'pk': self.profile.pk})
 
@@ -150,7 +149,7 @@ class ProfileTests(APITestCase):
         self.assertIsInstance(response.data['last_name'], str, msg='Last name is not a string!')
         self.assertEqual(response.data['first_name'], self.first_name)
         self.assertEqual(response.data['last_name'], self.last_name)
-        self.assertTrue(response.data['file'].name.endswith(self.image_name))
+        self.assertIn(self.image_name.split('.')[0], response.data['file'])
         self.assertIsInstance(response.data['location'], str, msg='Location name is not a string!')
         self.assertIn('tel', response.data)
         self.assertIsInstance(response.data['description'], str, msg='Description is not a string!')
@@ -158,7 +157,7 @@ class ProfileTests(APITestCase):
         self.assertEqual(response.data['type'], self.profile.type)
         self.assertEqual(response.data['email'], self.email)
         self.assertEqual(response.data['email'], self.email)
-        self.assertIsInstance(response.data['create_at'], str, msg='Create_at is not a string!')
+        self.assertIsInstance(response.data['created_at'], str, msg='Created_at is not a string!')
 
 
     def test_get_detail_fails_not_authorized(self):
