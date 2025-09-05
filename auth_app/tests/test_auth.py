@@ -3,17 +3,13 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
+from PIL import Image
+from io import BytesIO
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 from rest_framework.authtoken.models import Token
 from auth_app.models import Profile
 
-from PIL import Image
-from io import BytesIO
-# image = BytesIO()
-# img = Image.new('RGB', (10, 10), color='red')
-# img.save(image, format='JPEG')
-# image.seek(0)
 class RegistrationTests(APITestCase):
 
     def setUp(self):
@@ -149,6 +145,16 @@ class ProfileTests(APITestCase):
             created_at=timezone.now()
         )
         self.url_detail = reverse('profile-detail', kwargs={'pk': self.profile.pk})
+        
+        self.second_user = User.objects.create_user(username='Test2', password='Test12§$')
+        self.second_token = Token.objects.create(user=self.second_user)
+        self.second_profile = Profile.objects.create(
+            user=self.second_user,
+            file=self.image,
+            type="customer",
+            uploaded_at = timezone.now(),
+            created_at=timezone.now()
+        )
 
 
     def test_get_detail_success(self):
@@ -215,9 +221,7 @@ class ProfileTests(APITestCase):
 
 
     def test_patch_detail_fails_user_not_owner(self):
-        second_user = User.objects.create_user(username='Test2', password='Test12§$')
-        second_token = Token.objects.create(user=second_user)
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + second_token.key)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.second_token.key)
 
         response = self.client.patch(self.url_detail, self.patch_data, format='multipart')
 
@@ -235,10 +239,24 @@ class ProfileTests(APITestCase):
 
     def test_get_list_business_success(self):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+        expected_fields = {
+            "user",
+            "username",
+            "first_name",
+            "last_name",
+            "file",
+            "location",
+            "tel",
+            "description",
+            "working_hours",
+            "type",
+        }
 
         response = self.client.get(self.url_business)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for item in response.data:
+            self.assertEqual(set(item.keys()), expected_fields)
 
 
     def test_get_list_business_fails_not_authorized(self):
@@ -249,10 +267,21 @@ class ProfileTests(APITestCase):
 
     def test_get_list_customer_success(self):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+        expected_fields = {
+            "user",
+            "username",
+            "first_name",
+            "last_name",
+            "file",
+            "uploaded_at",
+            "type",
+        }
 
         response = self.client.get(self.url_customer)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for item in response.data:
+            self.assertEqual(set(item.keys()), expected_fields)
 
 
     def test_get_list_customer_fails_not_authorized(self):
