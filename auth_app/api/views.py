@@ -59,3 +59,19 @@ class ProfileUpdateRetriveView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated] # IsOwner
     serializer_class = ProfileSerializer
     queryset = Profile.objects.all()
+
+
+class ProfileListView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated] # IsOwner
+    serializer_class = ProfileSerializer
+    queryset = Profile.objects.all()
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        path = self.request.path
+
+        if "business" in path:
+            return queryset.filter(type="business")
+        elif "customer" in path:
+            return queryset.filter(type="customer")
+        return queryset
