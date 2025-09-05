@@ -1,10 +1,11 @@
 from django.contrib.auth.models import User
 from rest_framework import viewsets, status, generics, mixins
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
-from .serializers import RegistrationSerializer
+from .serializers import RegistrationSerializer, ProfileSerializer
+from auth_app.models import Profile
 
 class RegistrationView(generics.CreateAPIView):
 
@@ -34,6 +35,7 @@ class RegistrationView(generics.CreateAPIView):
 
 class LoginView(ObtainAuthToken):
     permission_classes = [AllowAny]
+    queryset = User.objects.all()
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
@@ -51,3 +53,9 @@ class LoginView(ObtainAuthToken):
         else:
             data = serializer.errors
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
+        
+
+class ProfileUpdateRetriveView(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticated] # IsOwner
+    serializer_class = ProfileSerializer
+    queryset = Profile.objects.all()
