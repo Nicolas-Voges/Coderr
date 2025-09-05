@@ -6,9 +6,9 @@ from auth_app.models import Profile
 
 class ProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
-    first_name = serializers.CharField(source='user.first_name', read_only=True)
-    last_name = serializers.CharField(source='user.last_name', read_only=True)
-    email = serializers.EmailField(source='user.email', read_only=True)
+    first_name = serializers.CharField(source='user.first_name')
+    last_name = serializers.CharField(source='user.last_name')
+    email = serializers.EmailField(source='user.email')
     created_at = serializers.DateTimeField(read_only=True)
     uploaded_at = serializers.DateTimeField(read_only=True)
 
@@ -36,6 +36,30 @@ class ProfileSerializer(serializers.ModelSerializer):
             return ""
         else:
             return value
+        
+
+    def update_user(self, instance, validated_data):
+        user_data = validated_data.get("user", {})
+        user_instance = instance.user
+        user_instance.first_name = user_data.get("first_name", user_instance.first_name)
+        user_instance.last_name = user_data.get("last_name", user_instance.last_name)
+        user_instance.email = user_data.get("email", user_instance.email)
+        user_instance.save()
+        
+
+    def update(self, instance, validated_data):
+        self.update_user(instance=instance, validated_data=validated_data)
+        print(f"FILE: {validated_data.get("file")}")
+        if not validated_data.get("file") == None:
+            instance.file = validated_data.get("file", "")
+            instance.uploaded_at = timezone.now()
+        instance.location = validated_data.get("location", instance.location)
+        instance.tel = validated_data.get("tel", instance.tel)
+        instance.description = validated_data.get("description", instance.description)
+        instance.working_hours = validated_data.get("working_hours", instance.working_hours)
+        instance.save()
+
+        return instance
 
 
 
@@ -43,6 +67,8 @@ class ProfileSerializer(serializers.ModelSerializer):
         rep = super().to_representation(instance)
         view = self.context.get("view")
         type = rep.get('type')
+        request = self.context.get("request")
+
         if type == 'customer':
             ordered = {
                 "user": rep.get('user'),
@@ -67,7 +93,7 @@ class ProfileSerializer(serializers.ModelSerializer):
                 "type": type
             }
         
-        if view and view.__class__.__name__ == "ProfileUpdateRetriveView":
+        if view and view.__class__.__name__ == "ProfileUpdateRetriveView" or request.method == 'PATCH':
             ordered['email']=self.set_null_to_empty_str(rep.get('email'))
             ordered['created_at']=self.set_null_to_empty_str(rep.get('created_at'))
             return ordered
