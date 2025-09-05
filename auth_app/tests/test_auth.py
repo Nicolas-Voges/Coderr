@@ -231,3 +231,31 @@ class ProfileTests(APITestCase):
         response = self.client.patch(url, self.patch_data, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+    def test_get_list_business_success(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+
+        response = self.client.get(self.url_business)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+    def test_get_list_business_fails_not_authorized(self):
+        response = self.client.get(self.url_business)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+    def test_get_list_customer_success(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+
+        response = self.client.get(self.url_customer)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+    def test_get_list_customer_fails_not_authorized(self):
+        response = self.client.get(self.url_customer)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
