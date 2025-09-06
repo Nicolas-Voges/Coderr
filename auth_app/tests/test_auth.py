@@ -1,3 +1,11 @@
+"""Test suite for authentication and profile management endpoints.
+
+Covers:
+- User registration
+- User login
+- Profile retrieval, update, and list endpoints
+"""
+
 from django.urls import reverse
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -10,8 +18,10 @@ from rest_framework.authtoken.models import Token
 from auth_app.models import Profile
 
 class RegistrationTests(APITestCase):
+    """Test cases for user registration."""
 
     def setUp(self):
+        """Set up default registration data."""
         self.url = reverse('registration')
         self.username = "TestUser"
         self.data = {
@@ -24,6 +34,7 @@ class RegistrationTests(APITestCase):
 
 
     def test_post_success(self):
+        """Test successful user registration."""
         response = self.client.post(self.url, self.data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -39,6 +50,7 @@ class RegistrationTests(APITestCase):
 
 
     def test_post_duplicate_fails(self):
+        """Test that registration with duplicate data fails (400)."""
         self.client.post(self.url, self.data, format='json')
         response = self.client.post(self.url, self.data, format='json')
 
@@ -46,8 +58,10 @@ class RegistrationTests(APITestCase):
 
 
 class LoginTests(APITestCase):
+    """Test cases for user login."""
 
     def setUp(self):
+        """Create a test user and token for login tests."""
         self.username = "exampleUsername"
         self.password = "examplePassword"
         self.email = "example@mail.de"
@@ -57,6 +71,7 @@ class LoginTests(APITestCase):
 
 
     def test_post_success(self):
+        """Test successful login with correct credentials."""
         data = {
             "username": self.username,
             "password": self.password
@@ -71,6 +86,7 @@ class LoginTests(APITestCase):
 
 
     def test_post_fails_user_not_exists(self):
+        """Test login fails with non-existent username."""
         data = {
             "username": 'WRONG',
             "password": self.password
@@ -82,6 +98,7 @@ class LoginTests(APITestCase):
 
 
     def test_post_fails_wrong_password(self):
+        """Test login fails with incorrect password."""
         data = {
             "username": self.username,
             "password": 'WRONG'
@@ -93,10 +110,10 @@ class LoginTests(APITestCase):
 
 
 class ProfileTests(APITestCase):
-
-
+    """Test cases for profile endpoints."""
 
     def get_test_image_file(self):
+        """Create and return a small test image file."""
         image = BytesIO()
         img = Image.new('RGB', (10, 10), color='red')
         img.save(image, format='JPEG')
@@ -105,7 +122,7 @@ class ProfileTests(APITestCase):
 
 
     def setUp(self):
-
+        """Create test users, tokens, and profiles."""
         self.url_business = reverse('profile_business-list')
         self.url_customer = reverse('profile_customer-list')
         self.username = "exampleUsername"
@@ -144,7 +161,6 @@ class ProfileTests(APITestCase):
             created_at=timezone.now()
         )
         self.url_detail = reverse('profile-detail', kwargs={'pk': self.profile.pk})
-        
         self.second_user = User.objects.create_user(username='Test2', password='Test12§$')
         self.second_token = Token.objects.create(user=self.second_user)
         self.second_profile = Profile.objects.create(
@@ -157,6 +173,7 @@ class ProfileTests(APITestCase):
 
 
     def test_get_detail_success(self):
+        """Test retrieving profile detail succeeds with authentication."""
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
 
         response = self.client.get(self.url_detail)
@@ -178,12 +195,14 @@ class ProfileTests(APITestCase):
 
 
     def test_get_detail_fails_not_authorized(self):
+        """Test retrieving profile detail fails without authentication."""
         response = self.client.get(self.url_detail)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
     def test_get_detail_fails_user_not_exists(self):
+        """Test retrieving profile detail fails for non-existent user."""
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
         url = reverse('profile-detail', kwargs={'pk': 9999})
 
@@ -193,7 +212,7 @@ class ProfileTests(APITestCase):
 
 
     def test_patch_detail_success(self):
-        
+        """Test successfully updating profile with PATCH request."""
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
 
         response = self.client.patch(self.url_detail, self.patch_data, format='multipart')
@@ -214,12 +233,14 @@ class ProfileTests(APITestCase):
 
 
     def test_patch_detail_fails_not_authorized(self):
+        """Test updating profile fails without authentication."""
         response = self.client.patch(self.url_detail, self.patch_data, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
     def test_patch_detail_fails_user_not_owner(self):
+        """Test updating profile fails when user is not the owner."""
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.second_token.key)
 
         response = self.client.patch(self.url_detail, self.patch_data, format='multipart')
@@ -228,6 +249,7 @@ class ProfileTests(APITestCase):
 
     
     def test_patch_detail_fails_user_not_exists(self):
+        """Test updating profile fails for non-existent user."""
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
         url = reverse('profile-detail', kwargs={'pk': 9999})
 
@@ -237,6 +259,7 @@ class ProfileTests(APITestCase):
 
 
     def test_get_list_business_success(self):
+        """Test retrieving business profile list succeeds with authentication."""
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
         expected_fields = {
             "user",
@@ -259,12 +282,14 @@ class ProfileTests(APITestCase):
 
 
     def test_get_list_business_fails_not_authorized(self):
+        """Test retrieving business profile list fails without authentication."""
         response = self.client.get(self.url_business)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
     def test_get_list_customer_success(self):
+        """Test retrieving customer profile list succeeds with authentication."""
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
         expected_fields = {
             "user",
@@ -284,6 +309,7 @@ class ProfileTests(APITestCase):
 
 
     def test_get_list_customer_fails_not_authorized(self):
+        """Test retrieving customer profile list fails without authentication."""
         response = self.client.get(self.url_customer)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
