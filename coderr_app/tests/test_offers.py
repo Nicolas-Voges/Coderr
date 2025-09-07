@@ -7,13 +7,14 @@ from io import BytesIO
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework.authtoken.models import Token
+from auth_app.tests.test_auth import create_test_image_file, create_test_users_profile, create_test_users_token, create_test_user
 
 class OffersTests(APITestCase):
     
     def setUp(self):
         self.post_request_body = {
             "title": "Grafikdesign-Paket",
-            "image": None,
+            "image": create_test_image_file(),
             "description": "Ein umfassendes Grafikdesign-Paket für Unternehmen.",
             "details": [
                 {
@@ -72,4 +73,18 @@ class OffersTests(APITestCase):
             ]
         }
 
-        
+        self.user = create_test_user()
+        self.token = create_test_users_token(self.user)
+        self.profile = create_test_users_profile(self.user)
+        self.url_detail = reverse('offers-detail', kwargs={'pk': self.offer.pk})
+        self.second_user = create_test_user(username='Test2', password='Test12§$')
+        self.second_token = create_test_users_token(self.second_user)
+        self.second_profile = create_test_users_profile(self.second_user, 'customer')
+
+
+
+    
+    def test_get_detail_sccess(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+
+        response = self.client.get(self.url_detail)

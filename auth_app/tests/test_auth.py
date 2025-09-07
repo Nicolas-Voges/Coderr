@@ -17,6 +17,55 @@ from rest_framework.test import APITestCase
 from rest_framework.authtoken.models import Token
 from auth_app.models import Profile
 
+username = "exampleUsername"
+password = "examplePassword"
+email = "example@mail.de"
+first_name = 'Max'
+last_name = ''
+image_name = "test_image.jpg"
+
+def create_test_image_file():
+    """Create and return a small test image file."""
+    image = BytesIO()
+    img = Image.new('RGB', (10, 10), color='red')
+    img.save(image, format='JPEG')
+    image.seek(0)
+    return SimpleUploadedFile(image_name, image.read(), content_type='image/jpeg')
+
+
+def create_test_user(
+        username = username,
+        password = password,
+        email = email,
+        first_name = first_name,
+        last_name = last_name,
+):
+    return User.objects.create_user(
+            username=username,
+            password=password,
+            email=email,
+            first_name=first_name,
+            last_name=last_name
+        )
+
+
+def create_test_users_token(user):
+    return Token.objects.create(user=user)
+
+
+def create_test_users_profile(user, type='business'):
+    return Profile.objects.create(
+            user=user,
+            file=create_test_image_file(),
+            location="Berlin",
+            tel="+49531697151",
+            description="Business description",
+            working_hours="9-17",
+            type=type,
+            created_at=timezone.now()
+        )
+
+
 class RegistrationTests(APITestCase):
     """Test cases for user registration."""
 
@@ -112,26 +161,10 @@ class LoginTests(APITestCase):
 class ProfileTests(APITestCase):
     """Test cases for profile endpoints."""
 
-    def get_test_image_file(self):
-        """Create and return a small test image file."""
-        image = BytesIO()
-        img = Image.new('RGB', (10, 10), color='red')
-        img.save(image, format='JPEG')
-        image.seek(0)
-        return SimpleUploadedFile('test_image.jpg', image.read(), content_type='image/jpeg')
-
-
     def setUp(self):
         """Create test users, tokens, and profiles."""
         self.url_business = reverse('profile_business-list')
         self.url_customer = reverse('profile_customer-list')
-        self.username = "exampleUsername"
-        self.password = "examplePassword"
-        self.email = "example@mail.de"
-        self.first_name = 'Max'
-        self.last_name = ''
-        self.image_name = "test_image.jpg"
-        self.image = self.get_test_image_file()
         self.patch_data = {
             "first_name": "Max",
             "last_name": "Mustermann",
@@ -140,36 +173,15 @@ class ProfileTests(APITestCase):
             "description": "Updated business description",
             "working_hours": "10-18",
             "email": "new_email@business.de",
-            "file": self.get_test_image_file()
+            "file": create_test_image_file()
         }
-        self.user = User.objects.create_user(
-            username=self.username,
-            password=self.password,
-            email=self.email,
-            first_name=self.first_name,
-            last_name=self.last_name
-        )
-        self.token = Token.objects.create(user=self.user)
-        self.profile = Profile.objects.create(
-            user=self.user,
-            file=self.image,
-            location="Berlin",
-            tel="+49531697151",
-            description="Business description",
-            working_hours="9-17",
-            type="business",
-            created_at=timezone.now()
-        )
+        self.user = create_test_user()
+        self.token = create_test_users_token(self.user)
+        self.profile = create_test_users_profile(self.user)
         self.url_detail = reverse('profile-detail', kwargs={'pk': self.profile.pk})
-        self.second_user = User.objects.create_user(username='Test2', password='Test12§$')
-        self.second_token = Token.objects.create(user=self.second_user)
-        self.second_profile = Profile.objects.create(
-            user=self.second_user,
-            file=self.image,
-            type="customer",
-            uploaded_at = timezone.now(),
-            created_at=timezone.now()
-        )
+        self.second_user = create_test_user(username='Test2', password='Test12§$')
+        self.second_token = create_test_users_token(self.second_user)
+        self.second_profile = create_test_users_profile(self.second_user, 'customer')
 
 
     def test_get_detail_success(self):
@@ -180,12 +192,12 @@ class ProfileTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['user'], self.user.id)
-        self.assertEqual(response.data['username'], self.username)
+        self.assertEqual(response.data['username'], username)
         self.assertIsInstance(response.data['first_name'], str, msg='First name is not a string!')
         self.assertIsInstance(response.data['last_name'], str, msg='Last name is not a string!')
-        self.assertEqual(response.data['first_name'], self.first_name)
-        self.assertEqual(response.data['last_name'], self.last_name)
-        self.assertIn(self.image_name.split('.')[0], response.data['file'])
+        self.assertEqual(response.data['first_name'], first_name)
+        self.assertEqual(response.data['last_name'], last_name)
+        self.assertIn(image_name.split('.')[0], response.data['file'])
         self.assertIsInstance(response.data['location'], str, msg='Location name is not a string!')
         self.assertIn('tel', response.data)
         self.assertIsInstance(response.data['description'], str, msg='Description is not a string!')
@@ -219,7 +231,7 @@ class ProfileTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['user'], self.user.id)
-        self.assertEqual(response.data['username'], self.username)
+        self.assertEqual(response.data['username'], username)
         self.assertEqual(response.data['first_name'], self.patch_data['first_name'])
         self.assertEqual(response.data['last_name'], self.patch_data['last_name'])
         self.assertEqual(response.data['location'], self.patch_data['location'])
