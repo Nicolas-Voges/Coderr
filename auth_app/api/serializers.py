@@ -104,8 +104,10 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 class RegistrationSerializer(serializers.ModelSerializer):
 
-
-    repeated_password = serializers.CharField(write_only=True)
+    email = serializers.EmailField(required=True)
+    username = serializers.CharField(required=True)
+    password = serializers.CharField(write_only=True, required=True)
+    repeated_password = serializers.CharField(write_only=True, required=True)
     type = serializers.ChoiceField(choices=Profile._meta.get_field('type').choices)
 
     class Meta:
@@ -125,6 +127,17 @@ class RegistrationSerializer(serializers.ModelSerializer):
         if validated_data['password'] != validated_data['repeated_password']:
             raise serializers.ValidationError({'Password': "Password do not match!"})
         return validated_data
+    
+
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Username already exists.")
+        return value
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Email already exists.")
+        return value
     
 
     def create(self, validated_data):

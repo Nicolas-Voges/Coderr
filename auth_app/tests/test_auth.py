@@ -91,6 +91,7 @@ class RegistrationTests(APITestCase):
         self.assertIn('user_id', response.data)
         self.assertEqual(response.data['username'], self.data['username'])
         self.assertEqual(response.data['email'], self.data['email'])
+        self.assertNotIn('password', response.data)
 
         user = User.objects.get(username=self.username)
         token = Token.objects.get(user=user)
@@ -104,6 +105,32 @@ class RegistrationTests(APITestCase):
         response = self.client.post(self.url, self.data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+    def test_post_fails_password_mismatch(self):
+        data = {
+            "username": self.username,
+            "email": "test@user.de",
+            "password": "examplePassword",
+            "repeated_password": "WRONG",
+            "type": "customer"
+        }
+        response = self.client.post(self.url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+    def test_post_fails_missing_fields_or_wrong_type(self):
+        for data in [
+            {"email": "test@user.de", "password": "examplePassword", "repeated_password": "examplePassword", "type": "customer"},
+            {"username": self.username, "password": "examplePassword", "repeated_password": "examplePassword", "type": "customer"},
+            {"username": self.username, "email": "test@user.de", "repeated_password": "examplePassword", "type": "customer"},
+            {"username": self.username, "email": "test@user.de", "password": "examplePassword", "type": "customer"},
+            {"username": self.username, "email": "test@user.de", "password": "examplePassword", "repeated_password": "examplePassword", "type": "WRONG"},
+        ]:
+            response = self.client.post(self.url, data, format='json')
+            
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
 
 
 class LoginTests(APITestCase):
@@ -132,30 +159,18 @@ class LoginTests(APITestCase):
         self.assertEqual(self.user.id, response.data['user_id'])
         self.assertEqual(self.username, response.data['username'])
         self.assertEqual(self.email, response.data['email'])
+        self.assertNotIn('password', response.data)
 
 
-    def test_post_fails_user_not_exists(self):
-        """Test login fails with non-existent username."""
-        data = {
-            "username": 'WRONG',
-            "password": self.password
-        }
+    def test_post_fails_user_not_exists_or_wrong_password(self):
+        """Test login fails with non-existent username or incorrect password."""
+        for data in [
+            {"username": "WRONG", "password": self.password},
+            {"username": self.username, "password": "WRONG"},
+        ]:
+            response = self.client.post(self.url, data, format='json')
 
-        response = self.client.post(self.url, data, format='json')
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-
-    def test_post_fails_wrong_password(self):
-        """Test login fails with incorrect password."""
-        data = {
-            "username": self.username,
-            "password": 'WRONG'
-        }
-
-        response = self.client.post(self.url, data, format='json')
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 class ProfileTests(APITestCase):
@@ -179,7 +194,7 @@ class ProfileTests(APITestCase):
         self.token = create_test_users_token(self.user)
         self.profile = create_test_users_profile(self.user)
         self.url_detail = reverse('profile-detail', kwargs={'pk': self.profile.pk})
-        self.second_user = create_test_user(username='Test2', password='Test12§$')
+        self.second_user = create_test_user(username='Test2', password='Test12§$', email="example2@mail.de")
         self.second_token = create_test_users_token(self.second_user)
         self.second_profile = create_test_users_profile(self.second_user, 'customer')
 
