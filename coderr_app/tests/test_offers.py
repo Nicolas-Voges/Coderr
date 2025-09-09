@@ -219,3 +219,36 @@ class OffersTests(APITestCase):
                 self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
             response = self.client.delete(url)
             self.assertEqual(response.status_code, expected)
+
+
+    def test_post_success(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+        expected_fields = {
+            "id",
+            "title",
+            "image",
+            "description",
+            "details"
+        }
+        expected_fields_detail = {
+            "id",
+            "title",
+            "revisions",
+            "delivery_time_in_days",
+            "price",
+            "features",
+            "offer_type"
+        }
+
+        response = self.client.post(self.url_list, self.post_request_body, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Offer.objects.filter(title=self.post_request_body['title']).exists())
+        self.assertEqual(set(response.data.keys()), expected_fields)
+        self.assertEqual(response.data['title'], self.post_request_body['title'])
+        self.assertEqual(response.data['description'], self.post_request_body['description'])
+        for detail in response.data['details']:
+            self.assertTrue(Detail.objects.filter(id=detail['id']).exists())
+            self.assertEqual(set(detail.keys()), expected_fields_detail)
+        offer_types = {detail["offer_type"] for detail in response.data["details"]}
+        self.assertSetEqual(offer_types, {"basic", "standard", "premium"})
