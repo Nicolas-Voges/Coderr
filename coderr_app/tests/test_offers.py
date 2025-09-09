@@ -267,3 +267,34 @@ class OffersTests(APITestCase):
                 self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
             response = self.client.post(self.url_list, data, format='multipart')
             self.assertEqual(response.status_code, expected)
+
+
+    def test_get_list_success(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
+        
+        response = self.client.get(self.url_list, {'creator_id': self.user.id})
+        for offer in response.data:
+            self.assertEqual(offer['user'], self.user.id)
+
+        response = self.client.get(self.url_list, {'min_price': 100})
+        for offer in response.data:
+            self.assertGreaterEqual(offer['min_price'], 100)
+
+        response = self.client.get(self.url_list, {'max_delivery_time': 7})
+        for offer in response.data:
+            self.assertLessEqual(offer['min_delivery_time'], 7)
+
+        response = self.client.get(self.url_list, {'ordering': 'min_price'})
+        prices = [offer['min_price'] for offer in response.data]
+        self.assertEqual(prices, sorted(prices))
+
+        response = self.client.get(self.url_list, {'ordering': '-updated_at'})
+        dates = [offer['updated_at'] for offer in response.data]
+        self.assertEqual(dates, sorted(dates, reverse=True))
+
+        response = self.client.get(self.url_list, {'search': 'Grafikdesign'})
+        for offer in response.data:
+            self.assertTrue('Grafikdesign' in offer['title'] or 'Grafikdesign' in offer['description'])
+        
+        response = self.client.get(self.url_list, {'page_size': 2})
+        self.assertLessEqual(len(response.data['results']), 2)
