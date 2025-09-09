@@ -127,3 +127,15 @@ class OffersTests(APITestCase):
         self.assertGreaterEqual(len(response.data["details"]), 3)
         self.assertEqual(response.data["min_price"], self.min_price)
         self.assertEqual(response.data["min_delivery_time"], self.min_delivery_time)
+
+
+    def test_get_detail_fails(self):
+        cases = [
+            (None, self.url_detail, status.HTTP_401_UNAUTHORIZED), 
+            (self.token.key, reverse('offers-detail', kwargs={'pk': 9999}), status.HTTP_404_NOT_FOUND)
+        ]
+        for token, url, expected in cases:
+            if token:
+                self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, expected)
