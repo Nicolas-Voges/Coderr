@@ -252,3 +252,18 @@ class OffersTests(APITestCase):
             self.assertEqual(set(detail.keys()), expected_fields_detail)
         offer_types = {detail["offer_type"] for detail in response.data["details"]}
         self.assertSetEqual(offer_types, {"basic", "standard", "premium"})
+
+
+    def test_post_fails(self):
+        wrong_data = copy.deepcopy(self.post_request_body)
+        wrong_data['details'] = [self.post_request_body['details'][1]]
+        cases = [
+            (None, self.post_request_body, status.HTTP_401_UNAUTHORIZED), 
+            (self.second_token.key, self.post_request_body, status.HTTP_403_FORBIDDEN),
+            (self.token.key, wrong_data, status.HTTP_400_BAD_REQUEST)
+        ]
+        for token, data, expected in cases:
+            if token:
+                self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
+            response = self.client.post(self.url_list, data, format='multipart')
+            self.assertEqual(response.status_code, expected)
