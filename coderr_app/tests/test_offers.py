@@ -153,7 +153,6 @@ class OffersTests(APITestCase):
         }
         request_detail = self.patch_request_body['details'][0]
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
-        count_offer_type = 0
 
         response = self.client.patch(self.url_detail, self.patch_request_body, format='multipart')
 
@@ -161,10 +160,9 @@ class OffersTests(APITestCase):
         for detail in response.data['details']:
             self.assertTrue(Detail.objects.filter(id=detail['id']).exists())
             self.assertEqual(set(detail.keys()), expected_fields_detail)
-            if detail['offer_type'] == 'basic':
-                basic_detail = detail
-                count_offer_type += 1
-        self.assertEqual(count_offer_type, 1)
+        basics = [d for d in response.data['details'] if d['offer_type'] == 'basic']
+        self.assertEqual(len(basics), 1)
+        basic_detail = basics[0]
         self.assertEqual(response.data['title'], self.patch_request_body['title'])
         self.assertEqual(basic_detail['title'], request_detail['title'])
         self.assertEqual(basic_detail['delivery_time_in_days'], request_detail['delivery_time_in_days'])
