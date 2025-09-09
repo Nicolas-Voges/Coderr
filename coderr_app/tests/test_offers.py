@@ -173,3 +173,33 @@ class OffersTests(APITestCase):
         self.assertEqual(set(basic_detail['features']), set(request_detail['features']))
         self.assertEqual(basic_detail['revisions'], request_detail['revisions'])
         self.assertEqual(basic_detail['price'], request_detail['price'])
+
+
+    def test_patch_detail_fails(self):
+        wrong_data = {
+            "title": "Updated Grafikdesign-Paket",
+            "details": [
+                {
+                    "title": "Basic Design Updated",
+                    "revisions": 3,
+                    "delivery_time_in_days": self.updated_delivery_time,
+                    "price": self.updated_price,
+                    "features": [
+                        "Logo Design",
+                        "Flyer"
+                    ],
+                    "offer_type": ""
+                }
+            ]
+        }
+        cases = [
+            (self.url_detail, None, self.patch_request_body, status.HTTP_401_UNAUTHORIZED), 
+            (self.url_detail, self.second_token.key, self.patch_request_body, status.HTTP_403_FORBIDDEN),
+            (self.url_detail, self.token.key, wrong_data, status.HTTP_400_BAD_REQUEST),
+            (reverse('offers-detail', kwargs={'pk': 9999}), self.token.key, self.patch_request_body, status.HTTP_404_NOT_FOUND)
+        ]
+        for url, token, data, expected in cases:
+            if token:
+                self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
+            response = self.client.patch(url, data, format='multipart')
+            self.assertEqual(response.status_code, expected)
