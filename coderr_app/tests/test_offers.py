@@ -139,3 +139,37 @@ class OffersTests(APITestCase):
                 self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
             response = self.client.get(url)
             self.assertEqual(response.status_code, expected)
+
+
+    def test_patch_detail_succsess(self):
+        expected_fields_detail = {
+            "id",
+            "title",
+            "revisions",
+            "delivery_time_in_days",
+            "price",
+            "features",
+            "offer_type"
+        }
+        request_detail = self.patch_request_body['details'][0]
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+        count_offer_type = 0
+
+        response = self.client.patch(self.url_detail, self.patch_request_body, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for detail in response.data['details']:
+            self.assertTrue(Detail.objects.filter(id=detail['id']).exists())
+            self.assertEqual(set(detail.keys()), expected_fields_detail)
+            if detail['offer_type'] == 'basic':
+                basic_detail = detail
+                count_offer_type += 1
+        self.assertEqual(count_offer_type, 1)
+        self.assertEqual(response.data['title'], self.patch_request_body['title'])
+        self.assertEqual(basic_detail['title'], request_detail['title'])
+        self.assertEqual(basic_detail['delivery_time_in_days'], request_detail['delivery_time_in_days'])
+        self.assertEqual(response.data["min_price"], self.new_min_price)
+        self.assertEqual(response.data["min_delivery_time"], self.new_min_delivery_time)
+        self.assertEqual(set(basic_detail['features']), set(request_detail['features']))
+        self.assertEqual(basic_detail['revisions'], request_detail['revisions'])
+        self.assertEqual(basic_detail['price'], request_detail['price'])
