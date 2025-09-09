@@ -203,3 +203,19 @@ class OffersTests(APITestCase):
                 self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
             response = self.client.patch(url, data, format='multipart')
             self.assertEqual(response.status_code, expected)
+
+
+    def test_delete_detail(self):
+        offer = self.create_offer(self.user)
+        url = reverse('offers-detail', kwargs={'pk': offer.pk})
+        cases = [
+            (None, status.HTTP_401_UNAUTHORIZED),
+            (self.second_token, status.HTTP_403_FORBIDDEN),
+            (self.token, status.HTTP_204_NO_CONTENT),
+            (self.token, status.HTTP_404_NOT_FOUND)
+        ]
+        for token, expected in cases:
+            if token:
+                self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
+            response = self.client.delete(url)
+            self.assertEqual(response.status_code, expected)
