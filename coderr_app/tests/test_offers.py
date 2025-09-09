@@ -101,8 +101,29 @@ class OffersTests(APITestCase):
 
     def test_get_detail_sccess(self):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
-
+        expected_fields = {
+            "id",
+            "user",
+            "title",
+            "image",
+            "description",
+            "created_at",
+            "updated_at",
+            "details",
+            "min_price",
+            "min_delivery_time"
+        }
         response = self.client.get(self.url_detail)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
+        self.assertEqual(set(response.data.keys()), expected_fields)
+        self.assertIsInstance(response.data["id"], int)
+        self.assertIsInstance(response.data["user"], int)
+        self.assertIsInstance(response.data["title"], str)
+        self.assertIsInstance(response.data["description"], str)
+        self.assertIsInstance(response.data["details"], list)
+        self.assertIsInstance(response.data["min_price"], int)
+        self.assertIsInstance(response.data["min_delivery_time"], int)
+        self.assertGreaterEqual(len(response.data["details"]), 3)
+        self.assertEqual(response.data["min_price"], self.min_price)
+        self.assertEqual(response.data["min_delivery_time"], self.min_delivery_time)
