@@ -272,29 +272,20 @@ class OffersTests(APITestCase):
     def test_get_list_success(self):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         
-        response = self.client.get(self.url_list, {'creator_id': self.user.id})
-        for offer in response.data:
-            self.assertEqual(offer['user'], self.user.id)
+        response = self.client.get(self.url_list)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsInstance(response.data['results'], list)
+        param_tests = [
+            ({'creator_id': self.user.id}, lambda offers: all(offer['user'] == self.user.id for offer in offers)),
+            ({'min_price': 100}, lambda offers: all(offer['min_price'] >= 100 for offer in offers)),
+            ({'max_delivery_time': 7}, lambda offers: all(offer['min_delivery_time'] <= 7 for offer in offers)),
+            ({'ordering': 'min_price'}, lambda offers: [offer['min_price'] for offer in offers] == sorted([offer['min_price'] for offer in offers])),
+            ({'ordering': '-updated_at'}, lambda offers: [offer['updated_at'] for offer in offers] == sorted([offer['updated_at'] for offer in offers], reverse=True)),
+            ({'search': 'Grafikdesign'}, lambda offers: all('Grafikdesign' in offer['title'] or 'Grafikdesign' in offer['description'] for offer in offers)),
+            ({'page_size': 2}, lambda offers: len(offers) <= 2)
+        ]
 
-        response = self.client.get(self.url_list, {'min_price': 100})
-        for offer in response.data:
-            self.assertGreaterEqual(offer['min_price'], 100)
-
-        response = self.client.get(self.url_list, {'max_delivery_time': 7})
-        for offer in response.data:
-            self.assertLessEqual(offer['min_delivery_time'], 7)
-
-        response = self.client.get(self.url_list, {'ordering': 'min_price'})
-        prices = [offer['min_price'] for offer in response.data]
-        self.assertEqual(prices, sorted(prices))
-
-        response = self.client.get(self.url_list, {'ordering': '-updated_at'})
-        dates = [offer['updated_at'] for offer in response.data]
-        self.assertEqual(dates, sorted(dates, reverse=True))
-
-        response = self.client.get(self.url_list, {'search': 'Grafikdesign'})
-        for offer in response.data:
-            self.assertTrue('Grafikdesign' in offer['title'] or 'Grafikdesign' in offer['description'])
-        
-        response = self.client.get(self.url_list, {'page_size': 2})
-        self.assertLessEqual(len(response.data['results']), 2)
+        for params, check in param_tests:
+            response = self.client.get(self.url_list, params)
+            offers = response.data.get('results', response.data)
+            self.assertTrue(check(offers))
