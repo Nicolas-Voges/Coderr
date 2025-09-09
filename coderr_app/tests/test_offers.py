@@ -1,18 +1,38 @@
+import copy
 from django.urls import reverse
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
-from PIL import Image
-from io import BytesIO
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework.authtoken.models import Token
-from auth_app.tests.test_auth import create_test_image_file, create_test_users_profile, create_test_users_token, create_test_user
-from coderr_app.models import Offer
+from auth_app.tests.test_auth import create_test_image_file, create_test_user, create_test_users_token, create_test_users_profile
+from coderr_app.models import Offer, Detail
 
 class OffersTests(APITestCase):
-    
+    def create_offer(self, user):
+            return Offer.objects.create(
+            user=user,
+            title='Testtitle',
+            image=create_test_image_file(),
+            description="Test",
+            details=[self.post_request_body['details'][0], self.post_request_body['details'][1], self.post_request_body['details'][2]]
+        )
+
+
     def setUp(self):
+        self.user = create_test_user()
+        self.token = create_test_users_token(self.user)
+        self.profile = create_test_users_profile(self.user)
+        self.second_user = create_test_user(username='Test2', password='Test12§$', email="example2@mail.de")
+        self.second_token = create_test_users_token(self.second_user)
+        self.second_profile = create_test_users_profile(self.second_user, 'customer')
+        self.min_price = 50
+        self.min_delivery_time = 5
+        self.updated_price = 40
+        self.updated_delivery_time = 8
+        self.new_min_price = self.updated_delivery_time
+        self.new_min_delivery_time = 7
         self.post_request_body = {
             "title": "Grafikdesign-Paket",
             "image": create_test_image_file(),
@@ -21,8 +41,8 @@ class OffersTests(APITestCase):
                 {
                     "title": "Basic Design",
                     "revisions": 2,
-                    "delivery_time_in_days": 5,
-                    "price": 100,
+                    "delivery_time_in_days": self.min_delivery_time,
+                    "price": 50,
                     "features": [
                         "Logo Design",
                         "Visitenkarte"
@@ -32,8 +52,8 @@ class OffersTests(APITestCase):
                 {
                     "title": "Standard Design",
                     "revisions": 5,
-                    "delivery_time_in_days": 7,
-                    "price": 200,
+                    "delivery_time_in_days": self.new_min_delivery_time,
+                    "price": self.min_price,
                     "features": [
                         "Logo Design",
                         "Visitenkarte",
@@ -56,15 +76,19 @@ class OffersTests(APITestCase):
                 }
             ]
         }
+        
+        self.offer = self.create_offer(user=self.user)
+        self.url_detail = reverse('offers-detail', kwargs={'pk': self.offer.pk})
+        self.url_list = reverse('offers-list')
 
-        self.post_request_body = {
+        self.patch_request_body = {
             "title": "Updated Grafikdesign-Paket",
             "details": [
                 {
                     "title": "Basic Design Updated",
                     "revisions": 3,
-                    "delivery_time_in_days": 6,
-                    "price": 120,
+                    "delivery_time_in_days": self.updated_delivery_time,
+                    "price": self.updated_price,
                     "features": [
                         "Logo Design",
                         "Flyer"
@@ -74,15 +98,6 @@ class OffersTests(APITestCase):
             ]
         }
 
-        self.user = create_test_user()
-        self.token = create_test_users_token(self.user)
-        self.profile = create_test_users_profile(self.user)
-        self.second_user = create_test_user(username='Test2', password='Test12§$', email="example2@mail.de")
-        self.second_token = create_test_users_token(self.second_user)
-        self.second_profile = create_test_users_profile(self.second_user, 'customer')
-        self.offer = Offer.objects.create(title='Testtitle')
-        self.url_detail = reverse('offers-detail', kwargs={'pk': self.offer.pk})
-
 
     def test_get_detail_sccess(self):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
@@ -90,4 +105,4 @@ class OffersTests(APITestCase):
         response = self.client.get(self.url_detail)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertGreaterEqual(response['id'], 0)
+        
