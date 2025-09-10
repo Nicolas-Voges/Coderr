@@ -268,11 +268,30 @@ class OffersTests(APITestCase):
 
 
     def test_get_list_success(self):
+        expected_response_fields = {
+            'count',
+            'next',
+            'previous',
+            'results'
+        }
+        expected_results_fields = {
+            'id',
+            'user',
+            'title',
+            'image',
+            'description',
+            'created_at',
+            'updated_at',
+            'details',
+            'min_price',
+            'min_delivery_time',
+            'user_details'
+        }
+        expected_detail_fields = {
+            'id',
+            'url'
+        }
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
-        
-        response = self.client.get(self.url_list)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIsInstance(response.data['results'], list)
         param_tests = [
             ({'creator_id': self.user.id}, lambda offers: all(offer['user'] == self.user.id for offer in offers)),
             ({'min_price': 100}, lambda offers: all(offer['min_price'] >= 100 for offer in offers)),
@@ -282,8 +301,20 @@ class OffersTests(APITestCase):
             ({'search': 'Grafikdesign'}, lambda offers: all('Grafikdesign' in offer['title'] or 'Grafikdesign' in offer['description'] for offer in offers)),
             ({'page_size': 2}, lambda offers: len(offers) <= 2)
         ]
+        
+        response = self.client.get(self.url_list)
 
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsInstance(response.data['results'], list)
+        for offer in response.data['results']:
+            self.assertTrue(Offer.objects.filter(id=offer['id']).exists())
+            self.assertEqual(set(offer.keys()), expected_results_fields)
+            for detail in offer['details']:
+                self.assertTrue(Detail.objects.filter(id=detail['id']).exists())
+                self.assertEqual(set(detail.keys()), expected_detail_fields)
         for params, check in param_tests:
             response = self.client.get(self.url_list, params)
             offers = response.data.get('results', response.data)
             self.assertTrue(check(offers))
+        self.assertEqual(set(response.data.keys()), expected_response_fields)
+        
