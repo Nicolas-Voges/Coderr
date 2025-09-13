@@ -77,6 +77,19 @@ class OffersTests(APITestCase):
             ]
         }
         
+        self.detail = Detail.objects.create(
+            title="Basic Design",
+            revisions=10,
+            delivery_time_in_days=15,
+            price=999,
+            features=[
+                        "Logo Design",
+                        "Visitenkarte",
+                        "Briefpapier",
+                        "Flyer"
+                ],
+            offer_type='premium'
+            )
         self.offer = self.create_offer(user=self.user)
         self.url_detail = reverse('offers-detail', kwargs={'pk': self.offer.pk})
         self.url_list = reverse('offers-list')
@@ -319,14 +332,35 @@ class OffersTests(APITestCase):
             self.assertTrue(check(offers))
         self.assertEqual(set(response.data.keys()), expected_response_fields)
 
-        api_offer = next(filter(lambda o: o['id'] == self.offer.id, offers), None)
+        api_offer = next(filter(lambda offer: offer['id'] == self.offer.id, offers), None)
         self.assertEqual(api_offer['title'], self.offer.title)
         self.assertEqual(api_offer['description'], self.offer.description)
         self.assertEqual(api_offer['min_price'], self.offer.min_price)
         self.assertEqual(api_offer['min_delivery_time'], self.offer.min_delivery_time)
         self.assertGreaterEqual(len(api_offer['details']), 3)
 
-        basic_detail = next(d for d in api_offer['details'] if d['offer_type'] == 'basic')
+        basic_detail = next(detail for detail in api_offer['details'] if detail['offer_type'] == 'basic')
         self.assertEqual(basic_detail['price'], self.min_price)
         self.assertEqual(basic_detail['delivery_time_in_days'], self.min_delivery_time)
 
+
+    def test_get_detail_offers_detail_success(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
+        expected_fields = {
+            "id",
+            "title",
+            "revisions",
+            "delivery_time_in_days",
+            "price",
+            "features",
+            "offer_type"
+        }
+
+        response = self.client.get(reverse('detail-detail'), kwargs={'pk': self.detail.pk})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(set(response.data.keys()), expected_fields)
+        self.assertEqual(response.data['title'], self.detail['title'])
+        self.assertEqual(response.data['revisions'], self.detail['revisions'])
+        self.assertEqual(response.data['offer_type'], self.detail['offer_type'])
+        self.assertIsInstance(response.data['features'], list)
