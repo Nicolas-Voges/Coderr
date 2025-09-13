@@ -364,3 +364,15 @@ class OffersTests(APITestCase):
         self.assertEqual(response.data['revisions'], self.detail['revisions'])
         self.assertEqual(response.data['offer_type'], self.detail['offer_type'])
         self.assertIsInstance(response.data['features'], list)
+
+
+    def test_get_detail_offers_detail_fails(self):
+        response = self.client.get(reverse('detail-detail'), kwargs={'pk': self.detail.pk})
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        self.client.credentials(HTTP_AUTHORISATION='Token ' + self.token)
+
+        response = self.client.get(reverse('detail-detail'), kwargs={'pk': 9999})
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
