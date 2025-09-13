@@ -16,7 +16,7 @@ class OffersTests(APITestCase):
             title='Testtitle',
             image=create_test_image_file(),
             description="Test",
-            details=[self.post_request_body['details'][0], self.post_request_body['details'][1], self.post_request_body['details'][2]]
+            details=self.post_request_body['details']
         )
 
 
@@ -294,12 +294,12 @@ class OffersTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         param_tests = [
             ({'creator_id': self.user.id}, lambda offers: all(offer['user'] == self.user.id for offer in offers)),
-            ({'min_price': 100}, lambda offers: all(offer['min_price'] >= 100 for offer in offers)),
-            ({'max_delivery_time': 7}, lambda offers: all(offer['min_delivery_time'] <= 7 for offer in offers)),
+            ({'min_price': self.offer.min_price}, lambda offers: all(offer['min_price'] >= self.offer.min_price for offer in offers)),
+            ({'max_delivery_time': self.offer.min_delivery_time}, lambda offers: all(offer['min_delivery_time'] <= self.offer.min_delivery_time for offer in offers)),
             ({'ordering': 'min_price'}, lambda offers: [offer['min_price'] for offer in offers] == sorted([offer['min_price'] for offer in offers])),
             ({'ordering': '-updated_at'}, lambda offers: [offer['updated_at'] for offer in offers] == sorted([offer['updated_at'] for offer in offers], reverse=True)),
             ({'search': 'Grafikdesign'}, lambda offers: all('Grafikdesign' in offer['title'] or 'Grafikdesign' in offer['description'] for offer in offers)),
-            ({'page_size': 2}, lambda offers: len(offers) <= 2)
+            ({'page_size': 2}, lambda offers: len(offers) <= 2 and len(offers) >= 1)
         ]
         
         response = self.client.get(self.url_list)
@@ -315,6 +315,18 @@ class OffersTests(APITestCase):
         for params, check in param_tests:
             response = self.client.get(self.url_list, params)
             offers = response.data.get('results', response.data)
+            self.assertGreaterEqual(len(offers), 1, f"Param test returned no offers for params: {params}")
             self.assertTrue(check(offers))
         self.assertEqual(set(response.data.keys()), expected_response_fields)
-        
+
+        api_offer = next(filter(lambda o: o['id'] == self.offer.id, offers), None)
+        self.assertEqual(api_offer['title'], self.offer.title)
+        self.assertEqual(api_offer['description'], self.offer.description)
+        self.assertEqual(api_offer['min_price'], self.offer.min_price)
+        self.assertEqual(api_offer['min_delivery_time'], self.offer.min_delivery_time)
+        self.assertGreaterEqual(len(api_offer['details']), 3)
+
+        basic_detail = next(d for d in api_offer['details'] if d['offer_type'] == 'basic')
+        self.assertEqual(basic_detail['price'], self.min_price)
+        self.assertEqual(basic_detail['delivery_time_in_days'], self.min_delivery_time)
+
