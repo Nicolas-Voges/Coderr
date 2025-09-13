@@ -15,7 +15,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from auth_app.tests.test_auth import (
+from auth_app.tests.utils import (
     create_test_image_file,
     create_test_user,
     create_test_users_token,
