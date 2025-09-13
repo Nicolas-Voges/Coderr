@@ -10,8 +10,17 @@ from auth_app.tests.test_auth import create_test_image_file, create_test_user, c
 from coderr_app.models import Offer, Detail
 
 class OffersTests(APITestCase):
+    """
+    Integration tests for Offer and Detail API endpoints.
+    Covers CRUD operations, authentication, permissions,
+    filtering, ordering, and validation cases.
+    """
+        
     def create_offer(self, user):
-            return Offer.objects.create(
+        """
+        Helper method to create an Offer with default test data.
+        """
+        return Offer.objects.create(
             user=user,
             title='Testtitle',
             image=create_test_image_file(),
@@ -21,6 +30,10 @@ class OffersTests(APITestCase):
 
 
     def setUp(self):
+        """
+        Create test users, profiles, tokens, and initial Offer/Detail objects.
+        Runs before each test case.
+        """
         self.user = create_test_user()
         self.token = create_test_users_token(self.user)
         self.profile = create_test_users_profile(self.user)
@@ -33,6 +46,8 @@ class OffersTests(APITestCase):
         self.updated_delivery_time = 8
         self.new_min_price = self.updated_delivery_time
         self.new_min_delivery_time = 7
+
+        # Default POST request payload for Offer creation
         self.post_request_body = {
             "title": "Grafikdesign-Paket",
             "image": create_test_image_file(),
@@ -77,6 +92,7 @@ class OffersTests(APITestCase):
             ]
         }
         
+        # Independent Detail object for dedicated detail tests
         self.detail = Detail.objects.create(
             title="Basic Design",
             revisions=10,
@@ -90,10 +106,13 @@ class OffersTests(APITestCase):
                 ],
             offer_type='premium'
             )
+        
+        # Create one default Offer for use in tests
         self.offer = self.create_offer(user=self.user)
         self.url_detail = reverse('offers-detail', kwargs={'pk': self.offer.pk})
         self.url_list = reverse('offers-list')
 
+        # Request body for partial updates (PATCH)
         self.patch_request_body = {
             "title": "Updated Grafikdesign-Paket",
             "details": [
@@ -112,7 +131,11 @@ class OffersTests(APITestCase):
         }
 
 
-    def test_get_detail_sccess(self):
+    def test_get_detail_success(self):
+        """
+        Ensure a single Offer can be retrieved successfully
+        with all expected fields and correct values.
+        """
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
         expected_fields = {
             "id",
@@ -143,6 +166,10 @@ class OffersTests(APITestCase):
 
 
     def test_get_detail_fails(self):
+        """
+        Ensure unauthorized access or invalid primary key
+        returns proper error codes.
+        """
         cases = [
             (None, self.url_detail, status.HTTP_401_UNAUTHORIZED), 
             (self.token.key, reverse('offers-detail', kwargs={'pk': 9999}), status.HTTP_404_NOT_FOUND)
@@ -155,6 +182,10 @@ class OffersTests(APITestCase):
 
 
     def test_patch_detail_succsess(self):
+        """
+        Ensure an Offer can be partially updated successfully.
+        Validates fields, details, and recalculated min values.
+        """
         expected_fields_detail = {
             "id",
             "title",
@@ -173,7 +204,7 @@ class OffersTests(APITestCase):
         for detail in response.data['details']:
             self.assertTrue(Detail.objects.filter(id=detail['id']).exists())
             self.assertEqual(set(detail.keys()), expected_fields_detail)
-        basics = [d for d in response.data['details'] if d['offer_type'] == 'basic']
+        basics = [detail for detail in response.data['details'] if detail['offer_type'] == 'basic']
         self.assertEqual(len(basics), 1)
         basic_detail = basics[0]
         self.assertEqual(response.data['title'], self.patch_request_body['title'])
@@ -187,6 +218,10 @@ class OffersTests(APITestCase):
 
 
     def test_patch_detail_fails(self):
+        """
+        Ensure patching an Offer fails with invalid data,
+        unauthorized access, forbidden access, or invalid ID.
+        """
         wrong_data = {
             "title": "Updated Grafikdesign-Paket",
             "details": [
@@ -217,6 +252,10 @@ class OffersTests(APITestCase):
 
 
     def test_delete_detail(self):
+        """
+        Ensure Offers can be deleted with proper authorization
+        and correct error codes for invalid cases.
+        """
         offer = self.create_offer(self.user)
         url = reverse('offers-detail', kwargs={'pk': offer.pk})
         cases = [
@@ -233,6 +272,10 @@ class OffersTests(APITestCase):
 
 
     def test_post_success(self):
+        """
+        Ensure an Offer can be created successfully.
+        Validates fields, details, and persisted objects.
+        """
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
         expected_fields = {
             "id",
@@ -266,6 +309,10 @@ class OffersTests(APITestCase):
 
 
     def test_post_fails(self):
+        """
+        Ensure Offer creation fails without token,
+        with wrong permissions, or invalid detail data.
+        """
         wrong_data = copy.deepcopy(self.post_request_body)
         wrong_data['details'] = [self.post_request_body['details'][1]]
         cases = [
@@ -281,6 +328,10 @@ class OffersTests(APITestCase):
 
 
     def test_get_list_success(self):
+        """
+        Ensure Offers list endpoint works with filtering,
+        ordering, searching, pagination, and correct structure.
+        """
         expected_response_fields = {
             'count',
             'next',
@@ -304,7 +355,7 @@ class OffersTests(APITestCase):
             'id',
             'url'
         }
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
         param_tests = [
             ({'creator_id': self.user.id}, lambda offers: all(offer['user'] == self.user.id for offer in offers)),
             ({'min_price': self.offer.min_price}, lambda offers: all(offer['min_price'] >= self.offer.min_price for offer in offers)),
@@ -332,6 +383,7 @@ class OffersTests(APITestCase):
             self.assertTrue(check(offers))
         self.assertEqual(set(response.data.keys()), expected_response_fields)
 
+        # Check content of a specific Offer returned in the list
         api_offer = next(filter(lambda offer: offer['id'] == self.offer.id, offers), None)
         self.assertEqual(api_offer['title'], self.offer.title)
         self.assertEqual(api_offer['description'], self.offer.description)
@@ -339,13 +391,18 @@ class OffersTests(APITestCase):
         self.assertEqual(api_offer['min_delivery_time'], self.offer.min_delivery_time)
         self.assertGreaterEqual(len(api_offer['details']), 3)
 
+        # Verify correct detail fields inside the offer
         basic_detail = next(detail for detail in api_offer['details'] if detail['offer_type'] == 'basic')
         self.assertEqual(basic_detail['price'], self.min_price)
         self.assertEqual(basic_detail['delivery_time_in_days'], self.min_delivery_time)
 
 
     def test_get_detail_offers_detail_success(self):
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
+        """
+        Ensure a single Detail object can be retrieved successfully
+        with all expected fields and values.
+        """
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
         expected_fields = {
             "id",
             "title",
@@ -356,22 +413,26 @@ class OffersTests(APITestCase):
             "offer_type"
         }
 
-        response = self.client.get(reverse('detail-detail'), kwargs={'pk': self.detail.pk})
+        response = self.client.get(reverse('detail-detail', kwargs={'pk': self.detail.pk}))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(set(response.data.keys()), expected_fields)
-        self.assertEqual(response.data['title'], self.detail['title'])
-        self.assertEqual(response.data['revisions'], self.detail['revisions'])
-        self.assertEqual(response.data['offer_type'], self.detail['offer_type'])
+        self.assertEqual(response.data['title'], self.detail.title)
+        self.assertEqual(response.data['revisions'], self.detail.revisions)
+        self.assertEqual(response.data['offer_type'], self.detail.offer_type)
         self.assertIsInstance(response.data['features'], list)
 
 
     def test_get_detail_offers_detail_fails(self):
-        response = self.client.get(reverse('detail-detail'), kwargs={'pk': self.detail.pk})
+        """
+        Ensure unauthorized access or invalid primary key for Detail view
+        returns correct error codes.
+        """
+        response = self.client.get(reverse('detail-detail', kwargs={'pk': self.detail.pk}))
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-        self.client.credentials(HTTP_AUTHORISATION='Token ' + self.token)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
 
         response = self.client.get(reverse('detail-detail'), kwargs={'pk': 9999})
 
