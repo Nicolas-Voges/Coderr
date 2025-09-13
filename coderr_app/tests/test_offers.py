@@ -1,12 +1,26 @@
+"""
+Django REST Framework integration tests for Offer and Detail endpoints.
+
+Includes:
+- Authentication and permission checks
+- CRUD operations on Offer and Detail
+- Query parameter tests (filtering, ordering, searching, pagination)
+- Validation of request and response data
+"""
+
 import copy
+
 from django.urls import reverse
-from django.contrib.auth.models import User
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.utils import timezone
+
 from rest_framework import status
 from rest_framework.test import APITestCase
-from rest_framework.authtoken.models import Token
-from auth_app.tests.test_auth import create_test_image_file, create_test_user, create_test_users_token, create_test_users_profile
+
+from auth_app.tests.test_auth import (
+    create_test_image_file,
+    create_test_user,
+    create_test_users_token,
+    create_test_users_profile
+    )
 from coderr_app.models import Offer, Detail
 
 class OffersTests(APITestCase):
