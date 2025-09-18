@@ -17,9 +17,18 @@ class DetailSerializer(serializers.ModelSerializer):
         ]
 
 
+class DetailHyperLinkSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Detail
+        fields = [
+            'id',
+            'url'
+        ]
+
+
 class OfferSerializer(serializers.ModelSerializer):
 
-    details = serializers.HyperlinkedRelatedField(many=True, read_only=True, view_name='')
+    details = serializers.HyperlinkedRelatedField(many=True, read_only=True, view_name='detail-detail')
 
     class Meta:
         model = Offer
