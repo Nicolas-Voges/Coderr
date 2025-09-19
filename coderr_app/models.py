@@ -8,9 +8,9 @@ class DetailType(models.TextChoices):
 
 
 class Offer(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='offer')
     title = models.CharField(max_length=50)
-    image = models.ImageField(upload_to='user_images/')
+    image = models.ImageField(upload_to='user_images/', blank=True, null=True)
     description = models.TextField()
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
