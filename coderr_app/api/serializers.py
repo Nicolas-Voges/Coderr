@@ -78,3 +78,31 @@ class OfferSerializer(serializers.ModelSerializer):
         )
 
         return serializer_class(obj.details.all(), many=True, context=self.context)
+
+
+    def create(self, validated_data):
+        created_at = timezone.now()
+        updated_at = None
+        if validated_data['image'] not in [None, ""]:
+            updated_at = timezone.now()
+
+        offer = Offer(
+            title=validated_data['title'],
+            image=validated_data['image'],
+            description=validated_data['description'],
+            details=validated_data['details'],
+            created_at=created_at,
+            updated_at=updated_at
+        )
+
+        for detail in validated_data.details:
+            Detail.objects.create(
+                title=detail['title'],
+                revisions=detail['revisions'],
+                delivery_time_in_days=detail['delivery_time_in_days'],
+                price=detail['price'],
+                features=detail['features'],
+                offer_type=detail['offer_type']
+            )
+        
+        return offer
