@@ -2,7 +2,7 @@ from rest_framework import viewsets, status, generics, mixins
 from coderr_app.models import Offer, Detail
 from rest_framework.permissions import IsAuthenticated
 from .serializers import OfferSerializer, DetailSerializer
-from .permissions import IsTypeBusiness, IsOwner
+from .permissions import IsTypeBusiness, IsOwner, IsSuperUser
 
 class OfferViewSet(viewsets.ModelViewSet):
     serializer_class = OfferSerializer
@@ -11,12 +11,15 @@ class OfferViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == 'list':
             permission_classes = []
-        if self.action == 'create':
+        elif self.action == 'create':
             permission_classes = [IsAuthenticated, IsTypeBusiness]
-        if self.action == 'retrieve':
+        elif self.action == 'retrieve':
             permission_classes = [IsAuthenticated]
-        if self.action == 'update' or self.action == 'destroy':
+        elif self.action == 'update' or self.action == 'destroy':
             permission_classes = [IsAuthenticated, IsOwner]
+        else:
+            permission_classes = [IsSuperUser]
+
         return [permission() for permission in permission_classes]
 
 class DetailRetrieveView(generics.RetrieveAPIView):
