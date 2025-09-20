@@ -49,21 +49,14 @@ class OfferSerializer(serializers.ModelSerializer):
 
     
     def validate_details(self, value):
-        if value.count() != 3:
+        if len(value) != 3:
             raise serializers.ValidationError('An offer must contain 3 details!')
-        type_1 = False
-        type_2 = False
-        type_3 = False
         
-        for detail in value:
-            if detail.offer_type.lower() == 'basic':
-                type_1 = True
-            if detail.offer_type.lower() == 'standard':
-                type_2 = True
-            if detail.offer_type.lower() == 'premium':
-                type_3 = True
+        types = {detail.offer_type.lower() for detail in value}
+
+        required = {"basic", "standard", "premium"}
         
-        if not type_1 and type_2 and type_3:
+        if types != required:
             raise serializers.ValidationError('Only one detail may be specified for each offer type!')
         
         return value
