@@ -13,9 +13,7 @@ class Offer(models.Model):
     image = models.ImageField(upload_to='user_images/', blank=True, null=True)
     description = models.TextField()
     created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
-    min_price = models.IntegerField()
-    min_delivery_time = models.IntegerField()
+    updated_at = models.DateTimeField(blank=True, null=True)
 
 
 class Detail(models.Model):
