@@ -6,6 +6,6 @@ router = routers.SimpleRouter()
 router.register(r'offers', OfferViewSet, basename='offers')
 
 urlpatterns = [
-    path('offers/', include(router.urls)),
+    path('', include(router.urls)),
     path('offerdetails/<int:pk>/', DetailRetrieveView.as_view(), name='detail-detail'),
 ]
