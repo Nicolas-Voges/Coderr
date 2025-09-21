@@ -29,7 +29,16 @@ class DetailHyperLinkSerializer(serializers.HyperlinkedModelSerializer):
 
 class OfferSerializer(serializers.ModelSerializer):
 
-    details = serializers.SerializerMethodField(many=True, view_name='detail-detail')
+    details = DetailSerializer(many=True, write_only=True)
+    details_output = DetailHyperLinkSerializer(many=True, read_only=True)
+    user_details = serializers.SerializerMethodField()
+
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+    updated_at = serializers.DateTimeField(read_only=True)
+    min_price = serializers.DecimalField(read_only=True, max_digits=10, decimal_places=2)
+    min_delivery_time = serializers.IntegerField(read_only=True)
+
 
     class Meta:
         model = Offer
@@ -39,9 +48,10 @@ class OfferSerializer(serializers.ModelSerializer):
             'title',
             'image',
             'description',
-            'ceated_at',
+            'created_at',
             'updated_at',
             'details',
+            'details_output',
             'min_price',
             'min_delivery_time',
             'user_details'
@@ -51,8 +61,8 @@ class OfferSerializer(serializers.ModelSerializer):
     def validate_details(self, value):
         if len(value) != 3:
             raise serializers.ValidationError('An offer must contain 3 details!')
-        
-        types = {detail.offer_type.lower() for detail in value}
+        print(f"TYPES {value[1]['offer_type']}")
+        types = {detail['offer_type'].lower() for detail in value}
 
         required = {"basic", "standard", "premium"}
         
@@ -62,34 +72,37 @@ class OfferSerializer(serializers.ModelSerializer):
         return value
     
 
-    def get_details(self, obj):
+    def get_user_details(self, obj):
         view = self.context.get('view')
-
-        serializer_class = (
-            DetailHyperLinkSerializer if view and view.action in ['list', 'retrieve']
-            else DetailSerializer
-        )
-
-        return serializer_class(obj.details.all(), many=True, context=self.context)
+        if view and view.action == 'list':
+            return {
+                "first_name": obj.user.first_name,
+                "last_name": obj.user.last_name,
+                "username": obj.user.username
+            }
+        return None
 
 
     def create(self, validated_data):
+        request = self.context.get("request")
+        user = request.user
         created_at = timezone.now()
         updated_at = None
         if validated_data['image'] not in [None, ""]:
             updated_at = timezone.now()
 
-        offer = Offer(
+        offer = Offer.objects.create(
+            user=user,
             title=validated_data['title'],
             image=validated_data['image'],
             description=validated_data['description'],
-            details=validated_data['details'],
             created_at=created_at,
             updated_at=updated_at
         )
 
-        for detail in validated_data.details:
+        for detail in validated_data['details']:
             Detail.objects.create(
+                offer=offer,
                 title=detail['title'],
                 revisions=detail['revisions'],
                 delivery_time_in_days=detail['delivery_time_in_days'],
