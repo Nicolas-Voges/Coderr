@@ -1,8 +1,10 @@
 from rest_framework.permissions import BasePermission
+from auth_app.models import Profile
 
 class IsTypeBusiness(BasePermission):
     def has_permission(self, request, view):
-        return request.user.type == 'business'
+        user_type = Profile.objects.get(user=request.user).type
+        return user_type == 'business'
 
 
 class IsSuperUser(BasePermission):
