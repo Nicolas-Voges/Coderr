@@ -112,3 +112,30 @@ class OfferSerializer(serializers.ModelSerializer):
             )
         
         return offer
+
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        request = self.context.get('request')
+        user = User.objects.get(id=instance.user.id)
+        user_details = {
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'username': user.username
+        }
+        
+        ordered = {
+            'id': rep.get('id'),
+            'user': rep.get('user'),
+            'title': rep.get('title'),
+            'image': rep.get('image'),
+            'description': rep.get('description'),
+            'created_at': rep.get('created_at'),
+            'updated_at': rep.get('updated_at'),
+            'details': rep.get('details'),
+            'min_price': rep.get('min_price'),
+            'min_delivery_time': rep.get('min_delivery_time'),
+            'user_details': user_details
+        }
+
+        return ordered
