@@ -117,12 +117,30 @@ class OfferSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         rep = super().to_representation(instance)
         request = self.context.get('request')
+        view = self.context.get('view')
+
         user = User.objects.get(id=instance.user.id)
         user_details = {
             'first_name': user.first_name,
             'last_name': user.last_name,
             'username': user.username
         }
+
+        details = instance.details.all()
+        details_data = DetailSerializer(details, many=True).data
+        details_data_url = DetailHyperLinkSerializer(details, many=True, context={"request": request}).data
+        
+        min_prices = [detail.price for detail in instance.details.all()]
+        min_price = min_prices[0]
+        for price in min_prices:
+            if price < min_price:
+                min_price = price
+        
+        min_delivery_times = [detail.delivery_time_in_days for detail in instance.details.all()]
+        min_delivery_time = min_delivery_times[0]
+        for time in min_delivery_times:
+            if time < min_delivery_time:
+                min_delivery_time = time
         
         ordered = {
             'id': rep.get('id'),
@@ -132,10 +150,21 @@ class OfferSerializer(serializers.ModelSerializer):
             'description': rep.get('description'),
             'created_at': rep.get('created_at'),
             'updated_at': rep.get('updated_at'),
-            'details': rep.get('details'),
-            'min_price': rep.get('min_price'),
-            'min_delivery_time': rep.get('min_delivery_time'),
-            'user_details': user_details
+            'details': details_data,
+            'min_price': min_price,
+            'min_delivery_time': min_delivery_time
         }
+
+        if request.method == 'GET':
+            ordered['details'] = details_data_url
+            if view and getattr(view, 'action', None) == 'list':
+                ordered['user_details'] = user_details
+                
+        elif request.method == 'PATCH' or request.method == 'POST':
+            ordered.pop('user')
+            ordered.pop('created_at')
+            ordered.pop('updated_at')
+            ordered.pop('min_price')
+            ordered.pop('min_delivery_time')
 
         return ordered
