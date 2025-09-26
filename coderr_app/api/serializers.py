@@ -1,3 +1,4 @@
+import os
 from django.contrib.auth.models import User
 from django.utils import timezone
 from rest_framework import serializers
@@ -59,16 +60,20 @@ class OfferSerializer(serializers.ModelSerializer):
 
     
     def validate_details(self, value):
-        if len(value) != 3:
-            raise serializers.ValidationError('An offer must contain 3 details!')
-        print(f"TYPES {value[1]['offer_type']}")
+        view = self.context.get('view')
         types = {detail['offer_type'].lower() for detail in value}
+        if view.action == 'create':
+            if len(value) != 3:
+                raise serializers.ValidationError('An offer must contain 3 details!')
 
-        required = {"basic", "standard", "premium"}
-        
-        if types != required:
-            raise serializers.ValidationError('Only one detail may be specified for each offer type!')
-        
+            required = {"basic", "standard", "premium"}
+
+            if types != required:
+                raise serializers.ValidationError('Only one detail may be specified for each offer type!')
+        else:
+            if len(types) != len(value):
+                raise serializers.ValidationError('Only one detail may be specified for each offer type!')
+
         return value
     
 
@@ -112,6 +117,32 @@ class OfferSerializer(serializers.ModelSerializer):
             )
         
         return offer
+    
+
+    def update(self, instance, validated_data):
+        details = validated_data.get('details')
+        if details:
+            for detail in details:
+                detail_instance = Detail.objects.get(offer_id=instance.id, offer_type=detail['offer_type'])
+                detail_instance.title = detail['title']
+                detail_instance.revisions = detail['revisions']
+                detail_instance.delivery_time_in_days = detail['delivery_time_in_days']
+                detail_instance.price = detail['price']
+                detail_instance.features = detail['features']
+                detail_instance.save()
+
+        instance.title = validated_data.get('title', instance.title)
+        instance.description = validated_data.get('description', instance.description)
+
+        if validated_data.get('image'):
+            old_image = instance.image
+            instance.image = validated_data.get('image')
+            instance.uploaded_at = timezone.now()
+            if os.path.isfile(old_image.path):
+                os.remove(old_image.path)
+
+        instance.save()
+        return instance
 
 
     def to_representation(self, instance):

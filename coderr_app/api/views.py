@@ -15,7 +15,7 @@ class OfferViewSet(viewsets.ModelViewSet):
             permission_classes = [IsAuthenticated, IsTypeBusiness]
         elif self.action == 'retrieve':
             permission_classes = [IsAuthenticated]
-        elif self.action == 'update' or self.action == 'destroy':
+        elif 'update' in self.action or self.action == 'destroy':
             permission_classes = [IsAuthenticated, IsOwner]
         else:
             permission_classes = [IsSuperUser]
