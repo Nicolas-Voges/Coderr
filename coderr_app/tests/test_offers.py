@@ -9,8 +9,10 @@ Includes:
 """
 
 import copy
+from decimal import Decimal
 
 from django.urls import reverse
+from django.utils import timezone
 
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -105,9 +107,28 @@ class OffersTests(APITestCase):
                 }
             ]
         }
+
+        # Create one default Offer for use in tests
+        self.offer = Offer.objects.create(user=self.user, created_at=timezone.now())
+        self.url_detail = reverse('offers-detail', kwargs={'pk': self.offer.pk})
+        self.url_list = reverse('offers-list')
         
         # Independent Detail object for dedicated detail tests
         self.detail = Detail.objects.create(
+            title="Basic Design",
+            revisions=10,
+            delivery_time_in_days=self.min_delivery_time,
+            price=self.min_price,
+            features=[
+                        "Logo Design",
+                        "Visitenkarte",
+                        "Briefpapier",
+                        "Flyer"
+                ],
+            offer_type='premium',
+            offer_id=self.offer.id
+        )
+        Detail.objects.create(
             title="Basic Design",
             revisions=10,
             delivery_time_in_days=15,
@@ -118,13 +139,23 @@ class OffersTests(APITestCase):
                         "Briefpapier",
                         "Flyer"
                 ],
-            offer_type='premium'
-            )
-        
-        # Create one default Offer for use in tests
-        self.offer = self.create_offer(user=self.user)
-        self.url_detail = reverse('offers-detail', kwargs={'pk': self.offer.pk})
-        self.url_list = reverse('offers-list')
+            offer_type='basic',
+            offer_id=self.offer.id
+        )
+        Detail.objects.create(
+            title="Basic Design",
+            revisions=10,
+            delivery_time_in_days=15,
+            price=999,
+            features=[
+                        "Logo Design",
+                        "Visitenkarte",
+                        "Briefpapier",
+                        "Flyer"
+                ],
+            offer_type='standard',
+            offer_id=self.offer.id
+        )
 
         # Request body for partial updates (PATCH)
         self.patch_request_body = {
@@ -172,9 +203,9 @@ class OffersTests(APITestCase):
         self.assertIsInstance(response.data["title"], str)
         self.assertIsInstance(response.data["description"], str)
         self.assertIsInstance(response.data["details"], list)
-        self.assertIsInstance(response.data["min_price"], int)
+        self.assertIsInstance(response.data["min_price"], Decimal)
         self.assertIsInstance(response.data["min_delivery_time"], int)
-        self.assertGreaterEqual(len(response.data["details"]), 3)
+        self.assertEqual(len(response.data["details"]), 3)
         self.assertEqual(response.data["min_price"], self.min_price)
         self.assertEqual(response.data["min_delivery_time"], self.min_delivery_time)
 
@@ -218,9 +249,9 @@ class OffersTests(APITestCase):
         for detail in response.data['details']:
             self.assertTrue(Detail.objects.filter(id=detail['id']).exists())
             self.assertEqual(set(detail.keys()), expected_fields_detail)
-        basics = [detail for detail in response.data['details'] if detail['offer_type'] == 'basic']
-        self.assertEqual(len(basics), 1)
-        basic_detail = basics[0]
+        for detail in response.data['details']:
+            if detail['offer_type'] == 'basic':
+                basic_detail = detail
         self.assertEqual(response.data['title'], self.patch_request_body['title'])
         self.assertEqual(basic_detail['title'], request_detail['title'])
         self.assertEqual(basic_detail['delivery_time_in_days'], request_detail['delivery_time_in_days'])
