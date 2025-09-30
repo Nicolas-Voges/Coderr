@@ -20,7 +20,7 @@ class Detail(models.Model):
     title = models.CharField(max_length=50)
     revisions = models.IntegerField()
     delivery_time_in_days = models.IntegerField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.IntegerField()
     features = models.JSONField(default=list)
     offer_type = models.CharField(max_length=20, choices=DetailType.choices, default=DetailType.basic)
     offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='details')
