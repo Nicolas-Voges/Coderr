@@ -41,6 +41,7 @@ class OffersTests(APITestCase):
             title='Testtitle',
             image=create_test_image_file(),
             description="Test",
+            created_at=timezone.now()
             # details=self.post_request_body['details']
         )
 
@@ -290,7 +291,7 @@ class OffersTests(APITestCase):
         for url, token, data, expected in cases:
             if token:
                 self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
-            response = self.client.patch(url, data, format='multipart')
+            response = self.client.patch(url, data, format='json')
             self.assertEqual(response.status_code, expected)
 
 
@@ -309,7 +310,7 @@ class OffersTests(APITestCase):
         ]
         for token, expected in cases:
             if token:
-                self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
+                self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
             response = self.client.delete(url)
             self.assertEqual(response.status_code, expected)
 
