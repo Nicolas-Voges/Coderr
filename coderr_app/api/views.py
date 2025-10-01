@@ -3,10 +3,12 @@ from coderr_app.models import Offer, Detail
 from rest_framework.permissions import IsAuthenticated
 from .serializers import OfferSerializer, DetailSerializer
 from .permissions import IsTypeBusiness, IsOwner, IsSuperUser
+from .paginations import ResultsSetPagination
 
 class OfferViewSet(viewsets.ModelViewSet):
     serializer_class = OfferSerializer
     queryset = Offer.objects.all()
+    pagination_class = ResultsSetPagination
 
     def get_permissions(self):
         if self.action == 'list':
@@ -25,7 +27,6 @@ class OfferViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Offer.objects.all()
-        page_size_param = self.request.query_params.get('page_size',12)
 
         creator_id_param = self.request.query_params.get('creator_id',None)
         if creator_id_param is not None:
@@ -47,7 +48,7 @@ class OfferViewSet(viewsets.ModelViewSet):
         if search_param is not None:
             queryset = queryset.filter(title__icontains=search_param)
             queryset = queryset.filter(description__icontains=search_param)
-        queryset = queryset.all()[:page_size_param]
+
         return queryset
     
 
