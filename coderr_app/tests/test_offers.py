@@ -9,7 +9,6 @@ Includes:
 """
 
 import copy
-import json
 # from decimal import Decimal
 
 from django.urls import reverse
@@ -68,10 +67,9 @@ class OffersTests(APITestCase):
         # Default POST request payload for Offer creation
         self.post_request_body = {
             "title": "Grafikdesign-Paket",
-            "image": create_test_image_file(),
-            # "image": None,
+            "image": None,
             "description": "Ein umfassendes Grafikdesign-Paket für Unternehmen.",
-            "details": json.dumps([
+            "details": [
                 {
                     "title": "Basic Design",
                     "revisions": 2,
@@ -108,7 +106,7 @@ class OffersTests(APITestCase):
                     ],
                     "offer_type": "premium"
                 }
-            ])
+            ]
         }
 
         # Create one default Offer for use in tests
@@ -339,7 +337,7 @@ class OffersTests(APITestCase):
             "features",
             "offer_type"
         }
-        response = self.client.post(self.url_list, self.post_request_body, format='multipart')
+        response = self.client.post(self.url_list, self.post_request_body, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Offer.objects.filter(title=self.post_request_body['title']).exists())
@@ -368,7 +366,7 @@ class OffersTests(APITestCase):
         for token, data, expected in cases:
             if token:
                 self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
-            response = self.client.post(self.url_list, data, format='multipart')
+            response = self.client.post(self.url_list, data, format='json')
             self.assertEqual(response.status_code, expected)
 
 
@@ -403,8 +401,8 @@ class OffersTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
         param_tests = [
             ({'creator_id': self.user.id}, lambda offers: all(offer['user'] == self.user.id for offer in offers)),
-            ({'min_price': self.offer.min_price}, lambda offers: all(offer['min_price'] >= self.offer.min_price for offer in offers)),
-            ({'max_delivery_time': self.offer.min_delivery_time}, lambda offers: all(offer['min_delivery_time'] <= self.offer.min_delivery_time for offer in offers)),
+            ({'min_price': self.min_price}, lambda offers: all(offer['min_price'] >= self.offer.min_price for offer in offers)),
+            ({'max_delivery_time': self.min_delivery_time}, lambda offers: all(offer['min_delivery_time'] <= self.offer.min_delivery_time for offer in offers)),
             ({'ordering': 'min_price'}, lambda offers: [offer['min_price'] for offer in offers] == sorted([offer['min_price'] for offer in offers])),
             ({'ordering': '-updated_at'}, lambda offers: [offer['updated_at'] for offer in offers] == sorted([offer['updated_at'] for offer in offers], reverse=True)),
             ({'search': 'Grafikdesign'}, lambda offers: all('Grafikdesign' in offer['title'] or 'Grafikdesign' in offer['description'] for offer in offers)),
