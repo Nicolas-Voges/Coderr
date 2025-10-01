@@ -9,6 +9,7 @@ Includes:
 """
 
 import copy
+import json
 # from decimal import Decimal
 
 from django.urls import reverse
@@ -68,8 +69,9 @@ class OffersTests(APITestCase):
         self.post_request_body = {
             "title": "Grafikdesign-Paket",
             "image": create_test_image_file(),
+            # "image": None,
             "description": "Ein umfassendes Grafikdesign-Paket für Unternehmen.",
-            "details": [
+            "details": json.dumps([
                 {
                     "title": "Basic Design",
                     "revisions": 2,
@@ -106,7 +108,7 @@ class OffersTests(APITestCase):
                     ],
                     "offer_type": "premium"
                 }
-            ]
+            ])
         }
 
         # Create one default Offer for use in tests
@@ -337,7 +339,6 @@ class OffersTests(APITestCase):
             "features",
             "offer_type"
         }
-
         response = self.client.post(self.url_list, self.post_request_body, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
