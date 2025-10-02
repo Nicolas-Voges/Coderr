@@ -9,8 +9,9 @@ Includes:
 """
 
 import copy
-# from decimal import Decimal
+import os
 
+from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -21,7 +22,8 @@ from auth_app.tests.utils import (
     create_test_image_file,
     create_test_user,
     create_test_users_token,
-    create_test_users_profile
+    create_test_users_profile,
+    delete_test_images
     )
 from coderr_app.models import Offer, Detail
 
@@ -175,6 +177,10 @@ class OffersTests(APITestCase):
                 }
             ]
         }
+
+        
+    def tearDown(self):
+        delete_test_images(["offer_images", "user_images"])
 
 
     def test_get_detail_success(self):

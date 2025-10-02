@@ -1,5 +1,7 @@
+import os
 from PIL import Image
 from io import BytesIO
+from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -53,3 +55,23 @@ def create_test_users_profile(user, type='business'):
             type=type,
             created_at=timezone.now()
         )
+
+
+def delete_test_images(folders_to_clean):
+    """
+    Delete all test images in media/user_images/ and media/Offer_images/
+    that start with 'test_image'.
+    """
+    for folder in folders_to_clean:
+        folder_path = os.path.join(settings.MEDIA_ROOT, folder)
+        if not os.path.exists(folder_path):
+            continue
+
+        for root, dirs, files in os.walk(folder_path):
+            for filename in files:
+                if filename.startswith("test_image"):
+                    file_path = os.path.join(root, filename)
+                    try:
+                        os.remove(file_path)
+                    except Exception as error:
+                        print(f"Could not delete {file_path}: {error}")

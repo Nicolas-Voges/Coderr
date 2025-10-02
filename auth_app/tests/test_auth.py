@@ -18,6 +18,7 @@ from .utils import (
     create_test_user,
     create_test_users_token,
     create_test_users_profile,
+    delete_test_images,
     first_name,
     last_name,
     image_name,
@@ -158,6 +159,10 @@ class ProfileTests(APITestCase):
         self.second_user = create_test_user(username='Test2', password='Test12§$', email="example2@mail.de")
         self.second_token = create_test_users_token(self.second_user)
         self.second_profile = create_test_users_profile(self.second_user, 'customer')
+
+
+    def tearDown(self):
+        delete_test_images(['user_images'])
 
 
     def test_get_detail_success(self):
