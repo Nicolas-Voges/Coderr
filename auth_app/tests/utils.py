@@ -8,6 +8,8 @@ from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from auth_app.models import Profile
 
+FOLDERS_TO_CLEAN = ['user_images', 'offer_images']
+
 username = "exampleUsername"
 password = "examplePassword"
 email = "example@mail.de"
@@ -57,12 +59,12 @@ def create_test_users_profile(user, type='business'):
         )
 
 
-def delete_test_images(folders_to_clean):
+def delete_test_images():
     """
     Delete all test images in media/user_images/ and media/Offer_images/
     that start with 'test_image'.
     """
-    for folder in folders_to_clean:
+    for folder in FOLDERS_TO_CLEAN:
         folder_path = os.path.join(settings.MEDIA_ROOT, folder)
         if not os.path.exists(folder_path):
             continue

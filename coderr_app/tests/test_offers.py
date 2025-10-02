@@ -9,9 +9,6 @@ Includes:
 """
 
 import copy
-import os
-
-from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -24,7 +21,13 @@ from auth_app.tests.utils import (
     create_test_users_token,
     create_test_users_profile,
     delete_test_images
-    )
+)
+from .utils import (
+    min_time,
+    min_price, 
+    create_offer,
+    create_detail_set
+)
 from coderr_app.models import Offer, Detail
 
 class OffersTests(APITestCase):
@@ -33,21 +36,6 @@ class OffersTests(APITestCase):
     Covers CRUD operations, authentication, permissions,
     filtering, ordering, and validation cases.
     """
-        
-    def create_offer(self, user):
-        """
-        Helper method to create an Offer with default test data.
-        """
-        return Offer.objects.create(
-            user=user,
-            title='Testtitle',
-            image=create_test_image_file(),
-            description="Test",
-            created_at=timezone.now()
-            # details=self.post_request_body['details']
-        )
-
-
     def setUp(self):
         """
         Create test users, profiles, tokens, and initial Offer/Detail objects.
@@ -59,8 +47,8 @@ class OffersTests(APITestCase):
         self.second_user = create_test_user(username='Test2', password='Test12§$', email="example2@mail.de")
         self.second_token = create_test_users_token(self.second_user)
         self.second_profile = create_test_users_profile(self.second_user, 'customer')
-        self.min_price = 50
-        self.min_delivery_time = 5
+        self.min_price = min_price
+        self.min_delivery_time = min_time
         self.updated_price = 40
         self.updated_delivery_time = 8
         self.new_min_price = self.updated_delivery_time
@@ -117,48 +105,7 @@ class OffersTests(APITestCase):
         self.url_list = reverse('offers-list')
         
         # Independent Detail object for dedicated detail tests
-        self.detail = Detail.objects.create(
-            title="Basic Design",
-            revisions=10,
-            delivery_time_in_days=self.min_delivery_time,
-            price=self.min_price,
-            features=[
-                        "Logo Design",
-                        "Visitenkarte",
-                        "Briefpapier",
-                        "Flyer"
-                ],
-            offer_type='basic',
-            offer_id=self.offer.pk
-        )
-        Detail.objects.create(
-            title="Basic Design",
-            revisions=10,
-            delivery_time_in_days=15,
-            price=999,
-            features=[
-                        "Logo Design",
-                        "Visitenkarte",
-                        "Briefpapier",
-                        "Flyer"
-                ],
-            offer_type='premium',
-            offer_id=self.offer.pk
-        )
-        Detail.objects.create(
-            title="Basic Design",
-            revisions=10,
-            delivery_time_in_days=15,
-            price=999,
-            features=[
-                        "Logo Design",
-                        "Visitenkarte",
-                        "Briefpapier",
-                        "Flyer"
-                ],
-            offer_type='standard',
-            offer_id=self.offer.pk
-        )
+        self.detail, y, z = create_detail_set(self.offer.pk)
 
         # Request body for partial updates (PATCH)
         self.patch_request_body = {
@@ -178,9 +125,9 @@ class OffersTests(APITestCase):
             ]
         }
 
-        
+
     def tearDown(self):
-        delete_test_images(["offer_images", "user_images"])
+        delete_test_images()
 
 
     def test_get_detail_success(self):
@@ -306,7 +253,7 @@ class OffersTests(APITestCase):
         Ensure Offers can be deleted with proper authorization
         and correct error codes for invalid cases.
         """
-        offer = self.create_offer(self.user)
+        offer = create_offer(self.user)
         url = reverse('offers-detail', kwargs={'pk': offer.pk})
         cases = [
             (None, status.HTTP_401_UNAUTHORIZED),

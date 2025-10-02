@@ -162,7 +162,7 @@ class ProfileTests(APITestCase):
 
 
     def tearDown(self):
-        delete_test_images(['user_images'])
+        delete_test_images()
 
 
     def test_get_detail_success(self):
