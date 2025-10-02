@@ -157,7 +157,7 @@ class OffersTests(APITestCase):
         self.assertIsInstance(response.data["title"], str)
         self.assertIsInstance(response.data["description"], str)
         self.assertIsInstance(response.data["details"], list)
-        self.assertIsInstance(response.data["min_price"], int)
+        self.assertIsInstance(response.data["min_price"], float)
         self.assertIsInstance(response.data["min_delivery_time"], int)
         self.assertEqual(len(response.data["details"]), 3)
         self.assertEqual(response.data["min_price"], self.min_price)

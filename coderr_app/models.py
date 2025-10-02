@@ -20,7 +20,7 @@ class Detail(models.Model):
     title = models.CharField(max_length=50)
     revisions = models.IntegerField()
     delivery_time_in_days = models.IntegerField()
-    price = models.IntegerField()
+    price = models.FloatField()
     features = models.JSONField(default=list)
     offer_type = models.CharField(max_length=20, choices=DetailType.choices, default=DetailType.basic)
     offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='details')
@@ -32,8 +32,8 @@ class StatusType(models.TextChoices):
     cancelled = 'cancelled', "Cancelled"
 
 class Order(models.Model):
-    customer_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='order')
-    business_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='order')
+    customer_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='customer_order')
+    business_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='business_order')
     status = models.CharField(max_length=20, choices=StatusType.choices, default=StatusType.in_progress)
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField(blank=True, null=True)

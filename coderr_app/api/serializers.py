@@ -2,7 +2,7 @@ import os
 from django.contrib.auth.models import User
 from django.utils import timezone
 from rest_framework import serializers
-from coderr_app.models import Offer, Detail
+from coderr_app.models import Offer, Detail, Order
 
 class DetailSerializer(serializers.ModelSerializer):
 
@@ -84,8 +84,6 @@ class OfferSerializer(serializers.ModelSerializer):
         user = request.user
         created_at = timezone.now()
         updated_at = None
-        if validated_data['image'] not in [None, ""]:
-            updated_at = timezone.now()
 
         offer = Offer.objects.create(
             user=user,
@@ -192,3 +190,88 @@ class OfferSerializer(serializers.ModelSerializer):
             ordered.pop('min_delivery_time')
 
         return ordered
+    
+
+class OrderSerializer(serializers.ModelSerializer):
+    title = serializers.SerializerMethodField()
+    revisions = serializers.SerializerMethodField()
+    delivery_time_in_days = serializers.SerializerMethodField()
+    price = serializers.SerializerMethodField()
+    features = serializers.SerializerMethodField()
+    offer_type = serializers.SerializerMethodField()
+    created_at = serializers.DateTimeField(read_only=True)
+    updated_at = serializers.DateTimeField(read_only=True)
+    customer_user = serializers.SerializerMethodField()
+    business_user = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Order
+        fields = [
+            'id',
+            'customer_user',
+            'business_user',
+            'title',
+            'revisions',
+            'delivery_time_in_days',
+            'price',
+            'features',
+            'offer_type',
+            'status',
+            'created_at',
+            'updated_at',
+            'offer_detail'
+        ]
+
+    def get_title(self, obj):
+        view = self.context.get('view')
+        if view and view.action == 'list':
+            return {"title": obj.detail.title} 
+        return None
+    
+
+    def get_revisions(self, obj):
+        view = self.context.get('view')
+        if view and view.action == 'list':
+            return {"revisions": obj.detail.revisions} 
+        return None
+    
+
+    def get_revisions(self, obj):
+        view = self.context.get('view')
+        if view and view.action == 'list':
+            return {"tirevisionstle": obj.detail.revisions} 
+        return None
+    
+
+    def get_delivery_time_in_days(self, obj):
+        view = self.context.get('view')
+        if view and view.action == 'list':
+            return {"delivery_time_in_days": obj.detail.delivery_time_in_days} 
+        return None
+    
+
+    def get_price(self, obj):
+        view = self.context.get('view')
+        if view and view.action == 'list':
+            return {"price": obj.detail.price} 
+        return None
+    
+
+    def get_features(self, obj):
+        view = self.context.get('view')
+        if view and view.action == 'list':
+            return {"features": obj.detail.features} 
+        return None
+    
+
+    def get_customer_user(self, obj):
+        request = self.context.get('request')
+        return {'business_user': request.user}
+    
+
+    def get_business_user(self, obj):
+        request = self.context.get('request')
+        detail = Detail.objects.get(id=request.date['offer_detail'])
+        offer = Offer.objects.get(id=detail.offer_id)
+        return {'customer_user': offer.user}
+    
