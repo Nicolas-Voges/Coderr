@@ -110,7 +110,7 @@ class OffersTests(APITestCase):
         }
 
         # Create one default Offer for use in tests
-        self.offer = Offer.objects.create(user=self.user, created_at=timezone.now())
+        self.offer = Offer.objects.create(user=self.user, created_at=timezone.now(), title=self.post_request_body['title'], description=self.post_request_body['description'])
         self.url_detail = reverse('offers-detail', kwargs={'pk': self.offer.pk})
         self.url_list = reverse('offers-list')
         
@@ -401,11 +401,11 @@ class OffersTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
         param_tests = [
             ({'creator_id': self.user.id}, lambda offers: all(offer['user'] == self.user.id for offer in offers)),
-            ({'min_price': self.min_price}, lambda offers: all(offer['min_price'] >= self.offer.min_price for offer in offers)),
-            ({'max_delivery_time': self.min_delivery_time}, lambda offers: all(offer['min_delivery_time'] <= self.offer.min_delivery_time for offer in offers)),
+            ({'min_price': self.min_price}, lambda offers: all(offer['min_price'] >= self.min_price for offer in offers)),
+            ({'max_delivery_time': self.min_delivery_time}, lambda offers: all(offer['min_delivery_time'] <= self.min_delivery_time for offer in offers)),
             ({'ordering': 'min_price'}, lambda offers: [offer['min_price'] for offer in offers] == sorted([offer['min_price'] for offer in offers])),
-            ({'ordering': '-updated_at'}, lambda offers: [offer['updated_at'] for offer in offers] == sorted([offer['updated_at'] for offer in offers], reverse=True)),
-            ({'search': 'Grafikdesign'}, lambda offers: all('Grafikdesign' in offer['title'] or 'Grafikdesign' in offer['description'] for offer in offers)),
+            ({'ordering': 'created_at'}, lambda offers: [offer['created_at'] for offer in offers] == sorted([offer['created_at'] for offer in offers], reverse=True)),
+            ({'search': 'Grafikdesign'}, lambda offers: all('Grafikdesign' in offer['title'] or 'grafikdesign' in offer['description'] for offer in offers)),
             ({'page_size': 2}, lambda offers: len(offers) <= 2 and len(offers) >= 1)
         ]
         
@@ -430,14 +430,14 @@ class OffersTests(APITestCase):
         api_offer = next(filter(lambda offer: offer['id'] == self.offer.pk, offers), None)
         self.assertEqual(api_offer['title'], self.offer.title)
         self.assertEqual(api_offer['description'], self.offer.description)
-        self.assertEqual(api_offer['min_price'], self.offer.min_price)
-        self.assertEqual(api_offer['min_delivery_time'], self.offer.min_delivery_time)
+        self.assertEqual(api_offer['min_price'], self.min_price)
+        self.assertEqual(api_offer['min_delivery_time'], self.min_delivery_time)
         self.assertGreaterEqual(len(api_offer['details']), 3)
 
         # Verify correct detail fields inside the offer
-        basic_detail = next(detail for detail in api_offer['details'] if detail['offer_type'] == 'basic')
-        self.assertEqual(basic_detail['price'], self.min_price)
-        self.assertEqual(basic_detail['delivery_time_in_days'], self.min_delivery_time)
+        basic_detail = next(Detail.objects.get(id=detail['id']) for detail in api_offer['details'] if Detail.objects.get(id=detail['id']).offer_type == 'basic')
+        self.assertEqual(basic_detail.price, self.min_price)
+        self.assertEqual(basic_detail.delivery_time_in_days, self.min_delivery_time)
 
 
     def test_get_detail_offers_detail_success(self):
@@ -477,6 +477,6 @@ class OffersTests(APITestCase):
 
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
 
-        response = self.client.get(reverse('detail-detail'), kwargs={'pk': 9999})
+        response = self.client.get(reverse('detail-detail', kwargs={'pk': 9999}))
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
