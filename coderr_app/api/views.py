@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework import viewsets, status, generics, mixins
 from coderr_app.models import Offer, Detail
 from rest_framework.permissions import IsAuthenticated
@@ -34,20 +35,25 @@ class OfferViewSet(viewsets.ModelViewSet):
 
         min_price_param = self.request.query_params.get('min_price',None)
         if min_price_param is not None:
-            queryset = queryset.filter(min_price__lte=min_price_param)
+            queryset = queryset.filter(details__price__lte=min_price_param)
 
         max_delivery_time_param = self.request.query_params.get('max_delivery_time',None)
         if max_delivery_time_param is not None:
-            queryset = queryset.filter(max_delivery_time_param__lte=max_delivery_time_param)
+            queryset = queryset.filter(details__delivery_time_in_days__lte=max_delivery_time_param)
 
         ordering_param = self.request.query_params.get('ordering',None)
         if ordering_param is not None:
-            queryset = queryset.order_by(ordering_param)
+            if ordering_param == 'created_at':
+                queryset = queryset.order_by(ordering_param)
+            elif ordering_param == 'min_price':
+                queryset = queryset.order_by('details__price')
+
 
         search_param = self.request.query_params.get('search',None) 
         if search_param is not None:
-            queryset = queryset.filter(title__icontains=search_param)
-            queryset = queryset.filter(description__icontains=search_param)
+            queryset = queryset.filter(
+                Q(title__icontains=search_param) | Q(description__icontains=search_param)
+            )
 
         return queryset
     
