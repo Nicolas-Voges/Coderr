@@ -33,6 +33,36 @@ class OrdersTests(APITestCase):
             created_at=timezone.now(),
             updated_at=None
         )
+        self.url_list = reverse('orders-list')
+        self.post_request_body = {
+            "offer_detail_id": self.detail_basic.id
+        }
 
     def tearDown(self):
         delete_test_images()
+
+
+    def test_post_success(self):
+        expected_fields = {
+            "id",
+            "customer_user",
+            "business_user",
+            "title",
+            "revisions",
+            "delivery_time_in_days",
+            "price",
+            "features",
+            "offer_type",
+            "status",
+            "created_at",
+            "updated_at"
+        }
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token_customer.key)
+
+        response = self.client.post(self.url_list, self.post_request_body, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(set(response.data.keys()), expected_fields)
+        self.assertEqual(response.data['customer_user'], self.user_customer.id)
+        self.assertEqual(response.data['business_user'], self.user_business.id)
+        self.assertTrue(Order.objects.filter(title=self.post_request_body['title']).exists())
