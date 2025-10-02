@@ -130,10 +130,10 @@ class OfferSerializer(serializers.ModelSerializer):
         if validated_data.get('image'):
             old_image = instance.image
             instance.image = validated_data.get('image')
-            instance.uploaded_at = timezone.now()
             if os.path.isfile(old_image.path):
                 os.remove(old_image.path)
 
+        instance.updated_at = timezone.now()
         instance.save()
         return instance
 
