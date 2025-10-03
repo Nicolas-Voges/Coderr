@@ -25,4 +25,9 @@ class IsStaffUser(BasePermission):
 
 class IsOwner(BasePermission):
     def has_object_permission(self, request, view, obj):
-        return request.user == obj.user or request.user == obj.business_user
+        return request.user == obj.user
+    
+
+class IsOrderOwner(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return request.user == obj.business_user

@@ -203,6 +203,12 @@ class OrderSerializer(serializers.ModelSerializer):
     updated_at = serializers.DateTimeField(read_only=True)
     customer_user = serializers.SerializerMethodField()
     business_user = serializers.SerializerMethodField()
+    offer_detail_id = serializers.PrimaryKeyRelatedField(
+        queryset=Detail.objects.all(),
+        source="offer_detail",
+        write_only=True
+    )
+
 
     class Meta:
         model = Order
@@ -219,59 +225,59 @@ class OrderSerializer(serializers.ModelSerializer):
             'status',
             'created_at',
             'updated_at',
-            'offer_detail'
+            'offer_detail_id'
         ]
 
     def get_title(self, obj):
-        view = self.context.get('view')
-        if view and view.action == 'list':
-            return {"title": obj.detail.title} 
-        return None
+        return obj.offer_detail.title
     
 
     def get_revisions(self, obj):
-        view = self.context.get('view')
-        if view and view.action == 'list':
-            return {"revisions": obj.detail.revisions} 
-        return None
+        return obj.offer_detail.revisions
     
 
     def get_revisions(self, obj):
-        view = self.context.get('view')
-        if view and view.action == 'list':
-            return {"tirevisionstle": obj.detail.revisions} 
-        return None
+        return obj.offer_detail.revisions
     
 
     def get_delivery_time_in_days(self, obj):
-        view = self.context.get('view')
-        if view and view.action == 'list':
-            return {"delivery_time_in_days": obj.detail.delivery_time_in_days} 
-        return None
+        return obj.offer_detail.delivery_time_in_days
     
 
     def get_price(self, obj):
-        view = self.context.get('view')
-        if view and view.action == 'list':
-            return {"price": obj.detail.price} 
-        return None
+        return obj.offer_detail.price
     
 
     def get_features(self, obj):
-        view = self.context.get('view')
-        if view and view.action == 'list':
-            return {"features": obj.detail.features} 
-        return None
+        return obj.offer_detail.features
     
-
+    
     def get_customer_user(self, obj):
-        request = self.context.get('request')
-        return {'business_user': request.user}
-    
+        return obj.customer_user.id
 
     def get_business_user(self, obj):
-        request = self.context.get('request')
-        detail = Detail.objects.get(id=request.date['offer_detail'])
+        offer = Offer.objects.get(id=obj.offer_detail.offer_id)
+        return offer.user.id
+
+
+    def get_offer_type(self, obj):
+        return obj.offer_detail.offer_type
+
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        user = request.user
+        created_at = timezone.now()
+        updated_at = None
+        detail = validated_data['offer_detail']
         offer = Offer.objects.get(id=detail.offer_id)
-        return {'customer_user': offer.user}
-    
+
+        order = Order.objects.create(
+            customer_user=user,
+            business_user=offer.user,
+            status='in_progress',
+            offer_detail=detail,
+            created_at=created_at,
+            updated_at=updated_at
+        )
+        return order

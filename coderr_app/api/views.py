@@ -4,7 +4,7 @@ from coderr_app.models import Offer, Detail, Order
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import MethodNotAllowed
 from .serializers import OfferSerializer, DetailSerializer, OrderSerializer
-from .permissions import IsTypeBusiness, IsTypeCustomer, IsOwner, IsSuperUser, IsStaffUser
+from .permissions import IsTypeBusiness, IsTypeCustomer, IsOwner, IsSuperUser, IsStaffUser, IsOrderOwner
 from .paginations import ResultsSetPagination
 
 class OfferViewSet(viewsets.ModelViewSet):
@@ -89,7 +89,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         elif self.action == 'create':
             permission_classes = [IsAuthenticated, IsTypeCustomer]
         elif 'update' in self.action:
-            permission_classes = [IsAuthenticated, IsTypeBusiness, IsOwner]
+            permission_classes = [IsAuthenticated, IsTypeBusiness, IsOrderOwner]
         elif self.action == 'destroy':
             permission_classes = [IsSuperUser, IsStaffUser]
         else:
