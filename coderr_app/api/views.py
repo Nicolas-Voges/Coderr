@@ -1,9 +1,10 @@
 from django.db.models import Q
 from rest_framework import viewsets, status, generics, mixins
-from coderr_app.models import Offer, Detail
+from coderr_app.models import Offer, Detail, Order
 from rest_framework.permissions import IsAuthenticated
-from .serializers import OfferSerializer, DetailSerializer
-from .permissions import IsTypeBusiness, IsOwner, IsSuperUser
+from rest_framework.exceptions import MethodNotAllowed
+from .serializers import OfferSerializer, DetailSerializer, OrderSerializer
+from .permissions import IsTypeBusiness, IsTypeCustomer, IsOwner, IsSuperUser, IsStaffUser
 from .paginations import ResultsSetPagination
 
 class OfferViewSet(viewsets.ModelViewSet):
@@ -62,3 +63,39 @@ class DetailRetrieveView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = DetailSerializer
     queryset = Detail.objects.all()
+
+
+class OrderViewSet(viewsets.ModelViewSet):
+
+    serializer_class = OrderSerializer
+    queryset = Order.objects.all()
+
+    def get_queryset(self):
+        user = self.request.user
+        profile_type = user.profile.type  
+
+        if profile_type == "customer":
+            return Order.objects.filter(customer_user=user)
+
+        elif profile_type == "business":
+            return Order.objects.filter(business_user=user)
+        
+        return Order.objects.none()
+
+    
+    def get_permissions(self):
+        if self.action == 'list':
+            permission_classes = [IsAuthenticated, ]
+        elif self.action == 'create':
+            permission_classes = [IsAuthenticated, IsTypeCustomer]
+        elif 'update' in self.action:
+            permission_classes = [IsAuthenticated, IsTypeBusiness, IsOwner]
+        elif self.action == 'destroy':
+            permission_classes = [IsSuperUser, IsStaffUser]
+        else:
+            permission_classes = [IsSuperUser]
+
+        return [permission() for permission in permission_classes]
+    
+    def retrieve(self, request, *args, **kwargs):
+        raise MethodNotAllowed('GET')
