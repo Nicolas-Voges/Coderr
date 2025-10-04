@@ -100,3 +100,8 @@ class OrdersTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(set(response.data[0].keys()), self.expected_fields)
         self.assertIsInstance(response.data[0]['features'], list)
+
+
+    def test_get_list_fails(self):
+        response = self.client.get(self.url_list)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
