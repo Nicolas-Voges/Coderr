@@ -114,3 +114,20 @@ class OrdersTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(set(response.data.keys()), self.expected_fields)
         self.assertEqual(response.data['status'], 'completed')
+
+
+    def test_patch_fails(self):
+        wrong_data = {
+            'status': 'done'
+        }
+        cases = [
+            (self.url_detail, None, self.patch_request_body, status.HTTP_401_UNAUTHORIZED), 
+            (self.url_detail, self.token_customer, self.patch_request_body, status.HTTP_403_FORBIDDEN),
+            (self.url_detail, self.token_business, wrong_data, status.HTTP_400_BAD_REQUEST),
+            (reverse('orders-detail', kwargs={'pk': 99999}), self.token_business, self.patch_request_body, status.HTTP_404_NOT_FOUND)
+        ]
+        for url, token, data, expected in cases:
+            if token:
+                self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+            response = self.client.patch(url, data, format='json')
+            self.assertEqual(response.status_code, expected)
