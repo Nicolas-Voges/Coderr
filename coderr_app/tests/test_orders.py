@@ -71,3 +71,23 @@ class OrdersTests(APITestCase):
         self.assertEqual(response.data['customer_user'], self.user_customer.id)
         self.assertEqual(response.data['business_user'], self.user_business.id)
         self.assertTrue(Order.objects.filter(offer_detail_id=self.detail_basic.id).exists())
+
+
+    def test_post_fails(self):
+        wrong_data = {
+            "offer_detail_id": 'ä'
+        }
+        not_existing_data = {
+            "offer_detail_id": 99999
+        }
+        cases = [
+            (None, self.post_request_body, status.HTTP_401_UNAUTHORIZED), 
+            (self.token_business, self.post_request_body, status.HTTP_403_FORBIDDEN),
+            (self.token_customer, wrong_data, status.HTTP_400_BAD_REQUEST),
+            (self.token_customer, not_existing_data, status.HTTP_404_NOT_FOUND)
+        ]
+        for token, data, expected in cases:
+            if token:
+                self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+            response = self.client.post(self.url_list, data, format='json')
+            self.assertEqual(response.status_code, expected)
