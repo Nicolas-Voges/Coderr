@@ -105,3 +105,12 @@ class OrdersTests(APITestCase):
     def test_get_list_fails(self):
         response = self.client.get(self.url_list)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+    def test_patch_success(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token_business.key)
+        response = self.client.patch(self.url_detail, self.patch_request_body, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(set(response.data.keys()), self.expected_fields)
+        self.assertEqual(response.data['status'], 'completed')
