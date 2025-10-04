@@ -96,6 +96,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             permission_classes = [IsSuperUser]
 
         return [permission() for permission in permission_classes]
-    
+
+
     def retrieve(self, request, *args, **kwargs):
         raise MethodNotAllowed('GET')

@@ -228,12 +228,9 @@ class OrderSerializer(serializers.ModelSerializer):
             'offer_detail_id'
         ]
 
+
     def get_title(self, obj):
         return obj.offer_detail.title
-    
-
-    def get_revisions(self, obj):
-        return obj.offer_detail.revisions
     
 
     def get_revisions(self, obj):
@@ -254,6 +251,7 @@ class OrderSerializer(serializers.ModelSerializer):
     
     def get_customer_user(self, obj):
         return obj.customer_user.id
+
 
     def get_business_user(self, obj):
         offer = Offer.objects.get(id=obj.offer_detail.offer_id)
