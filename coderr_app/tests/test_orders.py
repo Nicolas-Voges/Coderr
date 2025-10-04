@@ -91,3 +91,12 @@ class OrdersTests(APITestCase):
                 self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
             response = self.client.post(self.url_list, data, format='json')
             self.assertEqual(response.status_code, expected)
+
+
+    def test_get_list_success(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token_business.key)
+        response = self.client.get(self.url_list)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(set(response.data[0].keys()), self.expected_fields)
+        self.assertIsInstance(response.data[0]['features'], list)
