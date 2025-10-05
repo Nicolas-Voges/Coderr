@@ -53,3 +53,13 @@ class ReviewsTests(APITestCase):
 
     def tearDown(self):
         delete_test_images()
+
+
+def test_post_success(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token_customer.key)
+        response = self.client.post(self.url_list, self.post_request_body, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['reviewer'], self.user_customer)
+        self.assertEqual(response.data['description'], self.post_request_body['description'])
+        self.assertIsInstance(response.data['rating'], int)
