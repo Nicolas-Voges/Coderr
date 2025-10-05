@@ -1,5 +1,6 @@
 from django.urls import reverse
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -37,6 +38,12 @@ class OrdersTests(APITestCase):
         self.user_customer = create_test_user(username='customer')
         self.token_customer = create_test_users_token(self.user_customer)
         self.profile_customer = create_test_users_profile(self.user_customer, 'customer')
+        self.user_admin = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='adminpass123')
+        self.token_admin = create_test_users_token(self.user_admin)
+        self.profile_customer = create_test_users_profile(self.user_admin)
         self.offer = create_offer(self.user_business)
         self.detail_basic, self.detail_standard, self.detail_premium = create_detail_set(self.offer.id)
         self.order = Order.objects.create(
@@ -130,4 +137,19 @@ class OrdersTests(APITestCase):
             if token:
                 self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
             response = self.client.patch(url, data, format='json')
+            self.assertEqual(response.status_code, expected)
+
+
+    def test_delete(self):
+        cases = [
+            (None, status.HTTP_401_UNAUTHORIZED),
+            (self.token_business, status.HTTP_403_FORBIDDEN),
+            (self.token_customer, status.HTTP_403_FORBIDDEN),
+            (self.token_admin, status.HTTP_204_NO_CONTENT),
+            (self.token_admin, status.HTTP_404_NOT_FOUND)
+        ]
+        for token, expected in cases:
+            if token:
+                self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+            response = self.client.delete(self.url_detail)
             self.assertEqual(response.status_code, expected)
