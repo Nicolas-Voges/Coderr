@@ -153,3 +153,19 @@ class OrdersTests(APITestCase):
                 self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
             response = self.client.delete(self.url_detail)
             self.assertEqual(response.status_code, expected)
+
+
+    def test_get_detail_in_progress_success(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token_business.key)
+        response = self.client.get(reverse('orders-detail-in_progress', kwargs={'pk': self.user_business.id}))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['order_count'], 1)
+
+
+    def test_get_detail_in_progress_fails(self):
+        response = self.client.get(reverse('orders-detail-in_progress', kwargs={'pk': self.user_business.id}))
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token_business.key)
+        response = self.client.get(reverse('orders-detail-in_progress', kwargs={'pk': 99999}))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
