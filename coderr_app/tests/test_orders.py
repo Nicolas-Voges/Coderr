@@ -40,7 +40,7 @@ class OrdersTests(APITestCase):
         self.offer = create_offer(self.user_business)
         self.detail_basic, self.detail_standard, self.detail_premium = create_detail_set(self.offer.id)
         self.order = Order.objects.create(
-            offer_detail_id=self.offer.id,
+            offer_detail=self.detail_basic,
             customer_user=self.user_customer,
             business_user=self.user_business,
             status='in_progress',

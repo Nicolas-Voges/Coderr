@@ -1,5 +1,7 @@
+from rest_framework.exceptions import NotFound
 from rest_framework.permissions import BasePermission
 from auth_app.models import Profile
+from coderr_app.models import Detail
 
 class IsTypeBusiness(BasePermission):
     def has_permission(self, request, view):
@@ -9,20 +11,21 @@ class IsTypeBusiness(BasePermission):
 
 class IsTypeCustomer(BasePermission):
     def has_permission(self, request, view):
+        id = request.data.get('offer_detail_id')
+        if isinstance(id, int) and id > 0:
+            try:
+                Detail.objects.get(id=request.data['offer_detail_id'])
+            except Detail.DoesNotExist:
+                raise NotFound
         user_type = Profile.objects.get(user=request.user).type
         return user_type == 'customer'
 
 
-class IsSuperUser(BasePermission):
+class IsSuperOrStaffUser(BasePermission):
     def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and request.user.is_superuser
+        return request.user and request.user.is_authenticated and request.user.is_superuser or request.user.is_staff
     
-
-class IsStaffUser(BasePermission):
-    def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and request.user.is_staff
     
-
 class IsOwner(BasePermission):
     def has_object_permission(self, request, view, obj):
         return request.user == obj.user

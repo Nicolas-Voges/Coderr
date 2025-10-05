@@ -1,10 +1,13 @@
 from django.db.models import Q
 from rest_framework import viewsets, status, generics, mixins
+from rest_framework.exceptions import NotFound
+from rest_framework.views import APIView
+from rest_framework.response import Response
 from coderr_app.models import Offer, Detail, Order
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import MethodNotAllowed
-from .serializers import OfferSerializer, DetailSerializer, OrderSerializer
-from .permissions import IsTypeBusiness, IsTypeCustomer, IsOwner, IsSuperUser, IsStaffUser, IsOrderOwner
+from .serializers import OfferSerializer, DetailSerializer, OrderSerializer, OrderCountSerializer
+from .permissions import IsTypeBusiness, IsTypeCustomer, IsOwner, IsSuperOrStaffUser, IsOrderOwner
 from .paginations import ResultsSetPagination
 
 class OfferViewSet(viewsets.ModelViewSet):
@@ -22,7 +25,7 @@ class OfferViewSet(viewsets.ModelViewSet):
         elif 'update' in self.action or self.action == 'destroy':
             permission_classes = [IsAuthenticated, IsOwner]
         else:
-            permission_classes = [IsSuperUser]
+            permission_classes = [IsSuperOrStaffUser]
 
         return [permission() for permission in permission_classes]
     
@@ -73,6 +76,8 @@ class OrderViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         profile_type = user.profile.type  
+        if user.is_superuser or user.is_staff:
+            return Order.objects.all()
 
         if profile_type == "customer":
             return Order.objects.filter(customer_user=user)
@@ -91,12 +96,33 @@ class OrderViewSet(viewsets.ModelViewSet):
         elif 'update' in self.action:
             permission_classes = [IsAuthenticated, IsTypeBusiness, IsOrderOwner]
         elif self.action == 'destroy':
-            permission_classes = [IsSuperUser, IsStaffUser]
+            permission_classes = [IsSuperOrStaffUser]
         else:
-            permission_classes = [IsSuperUser]
+            permission_classes = [IsSuperOrStaffUser]
 
         return [permission() for permission in permission_classes]
 
 
     def retrieve(self, request, *args, **kwargs):
         raise MethodNotAllowed('GET')
+    
+
+class OrderListCountView(APIView):
+    queryset = Order.objects.all()
+    permission_classes = [IsAuthenticated]
+    serializer_class = OrderCountSerializer
+
+    def get(self, request, pk):
+        if not Order.objects.filter(business_user_id=pk).exists():
+            raise NotFound
+        in_progress_count = Order.objects.filter(business_user_id=pk, status="in_progress").count()
+        completed_count = Order.objects.filter(business_user_id=pk, status="completed").count()
+        if "completed" in request.path:
+            return Response({"completed_order_count": completed_count})
+        return Response({"order_count": in_progress_count})
+
+
+    # def get_serializer_context(self):
+    #     context = super().get_serializer_context()
+    #     context["pk"] = self.kwargs.get("pk")
+    #     return context
