@@ -55,7 +55,7 @@ class ReviewsTests(APITestCase):
         delete_test_images()
 
 
-def test_post_success(self):
+    def test_post_success(self):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token_customer.key)
         response = self.client.post(self.url_list, self.post_request_body, format='json')
 
@@ -63,3 +63,21 @@ def test_post_success(self):
         self.assertEqual(response.data['reviewer'], self.user_customer)
         self.assertEqual(response.data['description'], self.post_request_body['description'])
         self.assertIsInstance(response.data['rating'], int)
+
+
+    def test_post_fails(self):
+        wrong_data = {
+            "business_user": self.user_business,
+            "rating": 4,
+            "description": "Duplicate!"
+        }
+        cases = [
+            (None, self.post_request_body, status.HTTP_401_UNAUTHORIZED), 
+            (self.token_business, self.post_request_body, status.HTTP_403_FORBIDDEN),
+            (self.token_customer, wrong_data, status.HTTP_400_BAD_REQUEST)
+        ]
+        for token, data, expected in cases:
+            if token:
+                self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+            response = self.client.post(self.url_list, data, format='json')
+            self.assertEqual(response.status_code, expected)
