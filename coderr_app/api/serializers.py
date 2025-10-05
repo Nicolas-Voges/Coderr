@@ -2,7 +2,7 @@ import os
 from django.contrib.auth.models import User
 from django.utils import timezone
 from rest_framework import serializers
-from coderr_app.models import Offer, Detail, Order
+from coderr_app.models import Offer, Detail, Order, Review
 
 class DetailSerializer(serializers.ModelSerializer):
 
@@ -299,3 +299,17 @@ class OrderCountSerializer(serializers.ModelSerializer):
     def get_completed_order_count(self, value):
         pk = self.context.get('pk')
         return Order.objects.filter(business_user_id=pk, status='completed').count()
+    
+
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = [
+            'id',
+            'business_user',
+            'reviewer',
+            'rating',
+            'description',
+            'created_at',
+            'updated_at'
+        ]
