@@ -38,3 +38,20 @@ class Order(models.Model):
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField(blank=True, null=True)
     offer_detail = models.ForeignKey(Detail, on_delete=models.CASCADE, related_name='order')
+
+
+class Rating(models.IntegerChoices):
+        ONE = 1, "⭐️"
+        TWO = 2, "⭐⭐"
+        THREE = 3, "⭐⭐⭐"
+        FOUR = 4, "⭐⭐⭐⭐"
+        FIVE = 5, "⭐⭐⭐⭐⭐"
+
+
+class Review(models.Model):
+    business_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews_business')
+    reviewer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews')
+    rating = models.PositiveSmallIntegerField(choices=Rating.choices)
+    description = models.CharField(max_length=255)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField(blank=True, null=True)
