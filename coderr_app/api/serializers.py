@@ -279,3 +279,34 @@ class OrderSerializer(serializers.ModelSerializer):
             updated_at=updated_at
         )
         return order
+    
+
+class OrderCountSerializer(serializers.ModelSerializer):
+    order_count = serializers.SerializerMethodField(read_only=True)
+    completed_order_count = serializers.SerializerMethodField(read_only=True)
+    class Meta:
+        model = Order
+        fields = [
+            'order_count',
+            'completed_order_count'
+        ]
+
+    def get_order_count(self, value):
+        pk = self.context.get('pk')
+        return Order.objects.filter(business_user_id=pk, status='in_progress').count()
+    
+
+    def get_completed_order_count(self, value):
+        pk = self.context.get('pk')
+        return Order.objects.filter(business_user_id=pk, status='completed').count()
+    
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        request = self.context.get('request')
+
+        if 'completed' in request.path:
+            rep.pop('order_count')
+        else:
+            rep.pop('completed_order_count')
+        return rep
