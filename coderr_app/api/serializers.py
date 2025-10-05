@@ -299,14 +299,3 @@ class OrderCountSerializer(serializers.ModelSerializer):
     def get_completed_order_count(self, value):
         pk = self.context.get('pk')
         return Order.objects.filter(business_user_id=pk, status='completed').count()
-    
-
-    def to_representation(self, instance):
-        rep = super().to_representation(instance)
-        request = self.context.get('request')
-
-        if 'completed' in request.path:
-            rep.pop('order_count')
-        else:
-            rep.pop('completed_order_count')
-        return rep

@@ -107,7 +107,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         raise MethodNotAllowed('GET')
     
 
-class OrderListCountView(APIView):
+class OrderCountView(APIView):
     queryset = Order.objects.all()
     permission_classes = [IsAuthenticated]
     serializer_class = OrderCountSerializer
@@ -120,9 +120,3 @@ class OrderListCountView(APIView):
         if "completed" in request.path:
             return Response({"completed_order_count": completed_count})
         return Response({"order_count": in_progress_count})
-
-
-    # def get_serializer_context(self):
-    #     context = super().get_serializer_context()
-    #     context["pk"] = self.kwargs.get("pk")
-    #     return context
