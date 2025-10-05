@@ -9,7 +9,7 @@ class IsTypeBusiness(BasePermission):
         return user_type == 'business'
     
 
-class IsTypeCustomer(BasePermission):
+class IsTypeCustomerAndForced404(BasePermission):
     def has_permission(self, request, view):
         id = request.data.get('offer_detail_id')
         if isinstance(id, int) and id > 0:
@@ -17,6 +17,12 @@ class IsTypeCustomer(BasePermission):
                 Detail.objects.get(id=request.data['offer_detail_id'])
             except Detail.DoesNotExist:
                 raise NotFound
+        user_type = Profile.objects.get(user=request.user).type
+        return user_type == 'customer'
+    
+
+class IsTypeCustomer(BasePermission):
+    def has_permission(self, request, view):
         user_type = Profile.objects.get(user=request.user).type
         return user_type == 'customer'
 
@@ -34,3 +40,8 @@ class IsOwner(BasePermission):
 class IsOrderOwner(BasePermission):
     def has_object_permission(self, request, view, obj):
         return request.user == obj.business_user
+    
+
+class IsReviewOwner(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return request.user == obj.reviewer

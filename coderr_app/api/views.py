@@ -3,11 +3,11 @@ from rest_framework import viewsets, status, generics, mixins
 from rest_framework.exceptions import NotFound
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from coderr_app.models import Offer, Detail, Order
+from coderr_app.models import Offer, Detail, Order, Review
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import MethodNotAllowed
-from .serializers import OfferSerializer, DetailSerializer, OrderSerializer, OrderCountSerializer
-from .permissions import IsTypeBusiness, IsTypeCustomer, IsOwner, IsSuperOrStaffUser, IsOrderOwner
+from .serializers import OfferSerializer, DetailSerializer, OrderSerializer, OrderCountSerializer, ReviewSerializer
+from .permissions import IsTypeBusiness, IsTypeCustomer, IsTypeCustomerAndForced404, IsOwner, IsSuperOrStaffUser, IsOrderOwner, IsReviewOwner
 from .paginations import ResultsSetPagination
 
 class OfferViewSet(viewsets.ModelViewSet):
@@ -90,9 +90,9 @@ class OrderViewSet(viewsets.ModelViewSet):
     
     def get_permissions(self):
         if self.action == 'list':
-            permission_classes = [IsAuthenticated, ]
+            permission_classes = [IsAuthenticated]
         elif self.action == 'create':
-            permission_classes = [IsAuthenticated, IsTypeCustomer]
+            permission_classes = [IsAuthenticated, IsTypeCustomerAndForced404]
         elif 'update' in self.action:
             permission_classes = [IsAuthenticated, IsTypeBusiness, IsOrderOwner]
         elif self.action == 'destroy':
@@ -120,3 +120,22 @@ class OrderCountView(APIView):
         if "completed" in request.path:
             return Response({"completed_order_count": completed_count})
         return Response({"order_count": in_progress_count})
+    
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+
+    def get_permissions(self):
+        if self.action == 'list':
+            permission_classes = [IsAuthenticated]
+        elif self.action == 'create':
+            permission_classes = [IsAuthenticated, IsTypeCustomer]
+        elif 'update' in self.action:
+            permission_classes = [IsAuthenticated, IsReviewOwner]
+        elif self.action == 'destroy':
+            permission_classes = [IsAuthenticated, IsReviewOwner]
+        else:
+            permission_classes = [IsSuperOrStaffUser]
+
+        return [permission() for permission in permission_classes]
