@@ -25,6 +25,10 @@ class Offer(models.Model):
     updated_at = models.DateTimeField(blank=True, null=True)
 
 
+    def __str__(self):
+         return f"Offer {self.id} from user {self.user.id}"
+
+
 class Detail(models.Model):
     """Pricing and feature details for an offer."""
     title = models.CharField(max_length=50)
@@ -34,6 +38,10 @@ class Detail(models.Model):
     features = models.JSONField(default=list)
     offer_type = models.CharField(max_length=20, choices=DetailType.choices, default=DetailType.basic)
     offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='details')
+
+
+    def __str__(self):
+         return f"Detail {self.id} - {self.offer_type}, from offer {self.offer.id}"
 
 
 class StatusType(models.TextChoices):
@@ -50,6 +58,10 @@ class Order(models.Model):
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField(blank=True, null=True)
     offer_detail = models.ForeignKey(Detail, on_delete=models.CASCADE, related_name='order')
+
+
+    def __str__(self):
+         return f"Order {self.id} - From customer {self.customer_user.id} to business {self.business_user.id}"
 
 
 class Rating(models.IntegerChoices):
@@ -69,3 +81,7 @@ class Review(models.Model):
     description = models.CharField(max_length=255)
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField(blank=True, null=True)
+
+
+    def __str__(self):
+         return f"Review {self.id} - From {self.reviewer.id} to {self.business_user.id}"
