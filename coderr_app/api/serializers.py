@@ -313,3 +313,49 @@ class ReviewSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at'
         ]
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = [
+            'id',
+            'business_user',
+            'reviewer',
+            'rating',
+            'description',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = [
+            'reviewer',
+            'created_at',
+            'updated_at'
+        ]
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        reviewer = request.user
+        if Review.objects.filter(business_user=validated_data['business_user'], reviewer=reviewer).exists():
+            raise serializers.ValidationError('You have already reviewed this business user!')
+        created_at = timezone.now()
+        updated_at = None
+
+        review = Review.objects.create(
+            reviewer=reviewer,
+            business_user=validated_data['business_user'],
+            created_at=created_at,
+            updated_at=updated_at,
+            description=validated_data['description'],
+            rating=validated_data['rating']
+        )
+
+        return review
+    
+
+    def update(self, instance, validated_data):
+        instance.rating = validated_data.get('rating', instance.rating)
+        instance.description = validated_data.get('description', instance.description)
+        instance.updated_at = timezone.now()
+
+        return instance
