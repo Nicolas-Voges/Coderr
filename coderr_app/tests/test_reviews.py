@@ -17,24 +17,27 @@ from .utils import create_offer, create_detail_set
 
 class ReviewsTests(APITestCase):
     def setUp(self):
-        self.expected_fields = [
+        self.expected_fields = {
             'id',
             'business_user',
-            'rewiewer',
+            'reviewer',
             'rating',
             'description',
             'created_at',
             'updated_at'
-        ]
+        }
         self.user_business = create_test_user()
         self.token_business = create_test_users_token(self.user_business)
         self.profile_business = create_test_users_profile(self.user_business)
-        self.user_business_2 = create_test_user()
+        self.user_business_2 = create_test_user(username='Review Tester', email='k@k.kk')
         self.token_business_2 = create_test_users_token(self.user_business_2)
         self.profile_business_2 = create_test_users_profile(self.user_business_2)
         self.user_customer = create_test_user(username='customer')
         self.token_customer = create_test_users_token(self.user_customer)
         self.profile_customer = create_test_users_profile(self.user_customer, 'customer')
+        self.user_customer_2 = create_test_user(username='customer_2')
+        self.token_customer_2 = create_test_users_token(self.user_customer_2)
+        self.profile_customer_2 = create_test_users_profile(self.user_customer_2, 'customer')
         self.review = Review.objects.create(
             business_user=self.user_business,
             reviewer=self.user_customer,
@@ -45,9 +48,13 @@ class ReviewsTests(APITestCase):
         self.url_list = reverse('reviews-list')
         self.url_detail = reverse('reviews-detail', kwargs={'pk': self.review.pk})
         self.post_request_body = {
-            "business_user": self.user_business_2,
+            "business_user": self.user_business_2.pk,
             "rating": 2,
             "description": "Post test!"
+        }
+        self.patch_request_body = {
+              "rating": 5,
+              "description": "Noch besser als erwartet!"
         }
         
 
@@ -59,15 +66,17 @@ class ReviewsTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token_customer.key)
         response = self.client.post(self.url_list, self.post_request_body, format='json')
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['reviewer'], self.user_customer)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['reviewer'], self.user_customer.pk)
         self.assertEqual(response.data['description'], self.post_request_body['description'])
         self.assertIsInstance(response.data['rating'], int)
+        self.assertEqual(set(response.data.keys()), self.expected_fields)
+        self.assertEqual(response.data['updated_at'], None)
 
 
     def test_post_fails(self):
         wrong_data = {
-            "business_user": self.user_business,
+            "business_user": self.user_business.pk,
             "rating": 4,
             "description": "Duplicate!"
         }
