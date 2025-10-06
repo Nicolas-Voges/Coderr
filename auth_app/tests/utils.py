@@ -1,11 +1,23 @@
+
+"""
+Utility functions for authentication-related tests.
+
+Provides helpers to create test users, tokens, profiles,
+and temporary image files, as well as cleanup utilities.
+"""
+
 import os
+
 from PIL import Image
 from io import BytesIO
+
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 from django.contrib.auth.models import User
+
 from rest_framework.authtoken.models import Token
+
 from auth_app.models import Profile
 
 FOLDERS_TO_CLEAN = ['user_images', 'offer_images']
@@ -33,6 +45,7 @@ def create_test_user(
         first_name = first_name,
         last_name = last_name,
 ):
+    """Create and return a test user."""
     return User.objects.create_user(
             username=username,
             password=password,
@@ -43,10 +56,12 @@ def create_test_user(
 
 
 def create_test_users_token(user):
+    """Create and return a token for the given test user."""
     return Token.objects.create(user=user)
 
 
 def create_test_users_profile(user, type='business'):
+    """Create and return a profile for the given test user."""
     return Profile.objects.create(
             user=user,
             file=create_test_image_file(),

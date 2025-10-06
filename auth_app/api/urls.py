@@ -1,4 +1,9 @@
+"""
+URL routing for authentication and profile views.
+"""
+
 from django.urls import path
+
 from .views import RegistrationView, LoginView, ProfileUpdateRetriveView, ProfileListView
 
 urlpatterns = [
