@@ -1,13 +1,14 @@
-from django.db.models import Q
+from django.db.models import Q, Avg
 from rest_framework import viewsets, status, generics, mixins
 from rest_framework.exceptions import NotFound
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from coderr_app.models import Offer, Detail, Order, Review
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import MethodNotAllowed
+from auth_app.models import Profile
+from coderr_app.models import Offer, Detail, Order, Review
 from .serializers import OfferSerializer, DetailSerializer, OrderSerializer, OrderCountSerializer, ReviewSerializer
-from .permissions import IsTypeBusiness, IsTypeCustomer, IsTypeCustomerAndForced404, IsOwner, IsSuperOrStaffUser, IsOrderOwner, IsReviewOwner
+from .permissions import IsTypeBusiness, IsTypeCustomer, IsTypeCustomerAndForced404, IsOfferOwner, IsSuperOrStaffUser, IsOrderOwner, IsReviewOwnerAndForced404
 from .paginations import ResultsSetPagination
 
 class OfferViewSet(viewsets.ModelViewSet):
@@ -23,7 +24,7 @@ class OfferViewSet(viewsets.ModelViewSet):
         elif self.action == 'retrieve':
             permission_classes = [IsAuthenticated]
         elif 'update' in self.action or self.action == 'destroy':
-            permission_classes = [IsAuthenticated, IsOwner]
+            permission_classes = [IsAuthenticated, IsOfferOwner]
         else:
             permission_classes = [IsSuperOrStaffUser]
 
@@ -132,9 +133,9 @@ class ReviewViewSet(viewsets.ModelViewSet):
         elif self.action == 'create':
             permission_classes = [IsAuthenticated, IsTypeCustomer]
         elif 'update' in self.action:
-            permission_classes = [IsAuthenticated, IsReviewOwner]
+            permission_classes = [IsAuthenticated, IsReviewOwnerAndForced404]
         elif self.action == 'destroy':
-            permission_classes = [IsAuthenticated, IsReviewOwner]
+            permission_classes = [IsAuthenticated, IsReviewOwnerAndForced404]
         else:
             permission_classes = [IsSuperOrStaffUser]
 

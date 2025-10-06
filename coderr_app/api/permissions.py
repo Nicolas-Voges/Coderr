@@ -32,7 +32,7 @@ class IsSuperOrStaffUser(BasePermission):
         return request.user and request.user.is_authenticated and request.user.is_superuser or request.user.is_staff
     
     
-class IsOwner(BasePermission):
+class IsOfferOwner(BasePermission):
     def has_object_permission(self, request, view, obj):
         return request.user == obj.user
     
@@ -42,6 +42,12 @@ class IsOrderOwner(BasePermission):
         return request.user == obj.business_user
     
 
-class IsReviewOwner(BasePermission):
+class IsReviewOwnerAndForced404(BasePermission):
     def has_object_permission(self, request, view, obj):
+        pk = view.kwargs.get('pk')
+        if isinstance(id, int) and id > 0:
+            try:
+                Detail.objects.get(id=pk)
+            except Detail.DoesNotExist:
+                raise NotFound
         return request.user == obj.reviewer
