@@ -1,11 +1,21 @@
+"""
+Serializers for Offer, Detail, Order, Review, and Base Info.
+
+Handles data validation, nested serialization, and custom
+representations for API responses.
+"""
+
 import os
+
 from django.contrib.auth.models import User
 from django.utils import timezone
+
 from rest_framework import serializers
+
 from coderr_app.models import Offer, Detail, Order, Review
 
 class DetailSerializer(serializers.ModelSerializer):
-
+    """Serializer for Offer detail objects."""
     class Meta:
         model = Detail
         fields = [
@@ -20,6 +30,7 @@ class DetailSerializer(serializers.ModelSerializer):
 
 
 class DetailHyperLinkSerializer(serializers.HyperlinkedModelSerializer):
+    """Serializer providing only a URL to the Detail object."""
     class Meta:
         model = Detail
         fields = [
@@ -29,7 +40,7 @@ class DetailHyperLinkSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class OfferSerializer(serializers.ModelSerializer):
-
+    """Serializer for Offers with nested details and custom output."""
     details = DetailSerializer(many=True, write_only=True)
     details_output = DetailHyperLinkSerializer(many=True, read_only=True)
     user_details = serializers.SerializerMethodField()
@@ -60,6 +71,7 @@ class OfferSerializer(serializers.ModelSerializer):
 
     
     def validate_details(self, value):
+        """Ensure exactly 3 details are provided when creating an offer."""
         view = self.context.get('view')
         if view.action == 'create':
             if len(value) != 3:
@@ -69,6 +81,7 @@ class OfferSerializer(serializers.ModelSerializer):
     
 
     def get_user_details(self, obj):
+        """Return basic info about the user when listing offers."""
         view = self.context.get('view')
         if view and view.action == 'list':
             return {
@@ -80,6 +93,7 @@ class OfferSerializer(serializers.ModelSerializer):
 
 
     def create(self, validated_data):
+        """Create offer and nested details."""
         request = self.context.get("request")
         user = request.user
         created_at = timezone.now()
@@ -109,6 +123,7 @@ class OfferSerializer(serializers.ModelSerializer):
     
 
     def update(self, instance, validated_data):
+        """Update offer fields and nested details; remove old image if replaced."""
         details = validated_data.get('details')
         if details:
             for detail in details:
@@ -137,6 +152,7 @@ class OfferSerializer(serializers.ModelSerializer):
 
 
     def to_representation(self, instance):
+        """Custom output depending on request method and view action."""
         rep = super().to_representation(instance)
         request = self.context.get('request')
         view = self.context.get('view')
@@ -193,6 +209,7 @@ class OfferSerializer(serializers.ModelSerializer):
     
 
 class OrderSerializer(serializers.ModelSerializer):
+    """Serializer for Order objects with offer detail fields."""
     title = serializers.SerializerMethodField()
     revisions = serializers.SerializerMethodField()
     delivery_time_in_days = serializers.SerializerMethodField()
@@ -263,6 +280,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
     def create(self, validated_data):
+        """Create order from offer detail."""
         request = self.context.get("request")
         user = request.user
         created_at = timezone.now()
@@ -282,6 +300,7 @@ class OrderSerializer(serializers.ModelSerializer):
     
 
 class OrderCountSerializer(serializers.ModelSerializer):
+    """Serializer to return order counts per business user."""
     order_count = serializers.SerializerMethodField(read_only=True)
     completed_order_count = serializers.SerializerMethodField(read_only=True)
     class Meta:
@@ -302,6 +321,7 @@ class OrderCountSerializer(serializers.ModelSerializer):
     
 
 class ReviewSerializer(serializers.ModelSerializer):
+    """Serializer for reviews."""
     class Meta:
         model = Review
         fields = [
@@ -334,6 +354,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
+        """Create a new review if one does not already exist for the reviewer/business user."""
         request = self.context.get("request")
         reviewer = request.user
         if Review.objects.filter(business_user=validated_data['business_user'], reviewer=reviewer).exists():
@@ -354,6 +375,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     
 
     def update(self, instance, validated_data):
+        
         instance.rating = validated_data.get('rating', instance.rating)
         instance.description = validated_data.get('description', instance.description)
         instance.updated_at = timezone.now()
@@ -362,6 +384,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     
 
 class BaseInfoSerializer(serializers.Serializer):
+    """Serializer for aggregated base information."""
     review_count = serializers.IntegerField()
     average_rating = serializers.FloatField()
     business_profile_count = serializers.IntegerField()

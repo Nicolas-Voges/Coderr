@@ -25,9 +25,6 @@ from .utils import (
     username
 )
 
-
-
-
 class RegistrationTests(APITestCase):
     """Test cases for user registration."""
 
@@ -162,6 +159,7 @@ class ProfileTests(APITestCase):
 
 
     def tearDown(self):
+        """Delete all test images after running a test."""
         delete_test_images()
 
 

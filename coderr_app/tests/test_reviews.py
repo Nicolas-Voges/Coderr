@@ -1,22 +1,28 @@
+"""
+Automated API tests for the Review endpoints.
+
+Covers CRUD operations, permissions, and filtering behavior for reviews.
+"""
+
 from django.urls import reverse
 from django.utils import timezone
-from django.contrib.auth.models import User
 
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from auth_app.tests.utils import (
-    create_test_image_file,
     create_test_user,
     create_test_users_token,
     create_test_users_profile,
     delete_test_images
     )
 from coderr_app.models import Review
-from .utils import create_offer, create_detail_set
 
 class ReviewsTests(APITestCase):
+    """Integration tests for the Review API."""
+
     def setUp(self):
+        """Create test users, profiles, tokens, and an initial review."""
         self.expected_fields = {
             'id',
             'business_user',
@@ -26,18 +32,26 @@ class ReviewsTests(APITestCase):
             'created_at',
             'updated_at'
         }
+
+        # Business users
         self.user_business = create_test_user()
         self.token_business = create_test_users_token(self.user_business)
         self.profile_business = create_test_users_profile(self.user_business)
+
         self.user_business_2 = create_test_user(username='Review Tester', email='k@k.kk')
         self.token_business_2 = create_test_users_token(self.user_business_2)
         self.profile_business_2 = create_test_users_profile(self.user_business_2)
+
+        # Customer users
         self.user_customer = create_test_user(username='customer')
         self.token_customer = create_test_users_token(self.user_customer)
         self.profile_customer = create_test_users_profile(self.user_customer, 'customer')
+
         self.user_customer_2 = create_test_user(username='customer_2')
         self.token_customer_2 = create_test_users_token(self.user_customer_2)
         self.profile_customer_2 = create_test_users_profile(self.user_customer_2, 'customer')
+
+        # Initial review
         self.review = Review.objects.create(
             business_user=self.user_business,
             reviewer=self.user_customer,
@@ -45,6 +59,8 @@ class ReviewsTests(APITestCase):
             description='Test!',
             created_at=timezone.now()
         )
+
+        # Common URLs and payloads
         self.url_list = reverse('reviews-list')
         self.url_detail = reverse('reviews-detail', kwargs={'pk': self.review.pk})
         self.post_request_body = {
@@ -59,10 +75,12 @@ class ReviewsTests(APITestCase):
         
 
     def tearDown(self):
+        """Clean up created image files."""
         delete_test_images()
 
 
     def test_post_success(self):
+        """Customer can successfully post a new review."""
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token_customer.key)
         response = self.client.post(self.url_list, self.post_request_body, format='json')
 
@@ -75,6 +93,7 @@ class ReviewsTests(APITestCase):
 
 
     def test_post_fails(self):
+        """Posting reviews fails for invalid data or unauthorized users."""
         wrong_data = {
             "business_user": self.user_business.pk,
             "rating": 4,
@@ -93,6 +112,9 @@ class ReviewsTests(APITestCase):
 
 
     def test_get_list_success(self):
+        """Authorized users can list and filter reviews."""
+
+        # Create additional reviews
         Review.objects.create(
             business_user=self.user_business,
             reviewer=self.user_customer_2,
@@ -113,6 +135,7 @@ class ReviewsTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(set(response.data[0].keys()), self.expected_fields)
 
+        # Filtering & ordering tests
         param_tests = [
             ({'business_user_id': self.user_business.pk}, lambda reviews: all(review['business_user'] == self.user_business.pk for review in reviews), 2),
             ({'reviewer_id': self.user_customer.pk}, lambda reviews: all(review['reviewer'] <= self.user_customer.pk for review in reviews), 2),
@@ -128,11 +151,13 @@ class ReviewsTests(APITestCase):
 
     
     def test_get_list_fails(self):
+        """Unauthenticated users cannot retrieve the review list."""
         response = self.client.get(self.url_list)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
     def test_delete(self):
+        """Only the reviewer can delete their own review."""
         cases = [
             (None, status.HTTP_401_UNAUTHORIZED),
             (self.token_business, status.HTTP_403_FORBIDDEN),
@@ -147,6 +172,7 @@ class ReviewsTests(APITestCase):
 
 
     def test_patch_success(self):
+        """Reviewer can successfully update their review."""
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token_customer.key)
         response = self.client.patch(self.url_detail, self.patch_request_body, format='json')
 
@@ -160,6 +186,7 @@ class ReviewsTests(APITestCase):
 
 
     def test_patch_fails(self):
+        """Patch requests fail for invalid data, unauthorized, or non-existing reviews."""
         wrong_data = {
             'rating': '5u'
         }

@@ -9,6 +9,7 @@ Includes:
 """
 
 import copy
+
 from django.urls import reverse
 from django.utils import timezone
 
@@ -16,7 +17,6 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from auth_app.tests.utils import (
-    create_test_image_file,
     create_test_user,
     create_test_users_token,
     create_test_users_profile,
@@ -127,6 +127,7 @@ class OffersTests(APITestCase):
 
 
     def tearDown(self):
+        """Delete all test images after running a test."""
         delete_test_images()
 
 

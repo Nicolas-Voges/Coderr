@@ -1,22 +1,41 @@
+"""
+Views for Offer, Detail, Order, Review, and Base Info APIs.
+
+Includes viewsets for CRUD operations, custom queryset filtering,
+and aggregated base information endpoints.
+"""
+
 from django.db.models import Q, Avg
-from rest_framework import viewsets, status, generics, mixins
+
+from rest_framework import viewsets, generics
 from rest_framework.exceptions import NotFound
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import MethodNotAllowed
+
 from auth_app.models import Profile
 from coderr_app.models import Offer, Detail, Order, Review
-from .serializers import OfferSerializer, DetailSerializer, OrderSerializer, OrderCountSerializer, ReviewSerializer, BaseInfoSerializer
-from .permissions import IsTypeBusiness, IsTypeCustomer, IsTypeCustomerAndForced404, IsOfferOwner, IsSuperOrStaffUser, IsOrderOwner, IsReviewOwnerAndForced404
+from .serializers import OfferSerializer, DetailSerializer,\
+    OrderSerializer, OrderCountSerializer, ReviewSerializer, BaseInfoSerializer
+from .permissions import IsTypeBusiness, IsTypeCustomer, IsTypeCustomerAndForced404,\
+    IsOfferOwner, IsSuperOrStaffUser, IsOrderOwner, IsReviewOwnerAndForced404
 from .paginations import ResultsSetPagination
 
 class OfferViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for Offers.
+
+    Supports listing, creation, update, retrieve, and deletion.
+    Provides query param filtering by creator, price, delivery time, and search.
+    """
+
     serializer_class = OfferSerializer
     queryset = Offer.objects.all()
     pagination_class = ResultsSetPagination
 
     def get_permissions(self):
+        """Return permissions depending on action."""
         if self.action == 'list':
             permission_classes = []
         elif self.action == 'create':
@@ -32,6 +51,7 @@ class OfferViewSet(viewsets.ModelViewSet):
     
 
     def get_queryset(self):
+        """Return filtered queryset based on query params."""
         queryset = Offer.objects.all()
 
         creator_id_param = self.request.query_params.get('creator_id',None)
@@ -64,17 +84,25 @@ class OfferViewSet(viewsets.ModelViewSet):
     
 
 class DetailRetrieveView(generics.RetrieveAPIView):
+    """Retrieve a single Offer Detail object."""
     permission_classes = [IsAuthenticated]
     serializer_class = DetailSerializer
     queryset = Detail.objects.all()
 
 
 class OrderViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for Orders.
+
+    Customers can create orders; business users can update them.
+    Superusers/staff can access all orders and delete them.
+    """
 
     serializer_class = OrderSerializer
     queryset = Order.objects.all()
 
     def get_queryset(self):
+        """Return orders based on user type."""
         user = self.request.user
         profile_type = user.profile.type  
         if user.is_superuser or user.is_staff:
@@ -90,6 +118,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     
     def get_permissions(self):
+        """Return permissions depending on action."""
         if self.action == 'list':
             permission_classes = [IsAuthenticated]
         elif self.action == 'create':
@@ -105,10 +134,18 @@ class OrderViewSet(viewsets.ModelViewSet):
 
 
     def retrieve(self, request, *args, **kwargs):
+        """Disable GET for single orders."""
         raise MethodNotAllowed('GET')
     
 
 class OrderCountView(APIView):
+    """
+    APIView to return the count of orders for a business user.
+
+    GET /orders/<pk>/ returns in-progress count
+    GET /orders/<pk>/completed/ returns completed count
+    """
+
     queryset = Order.objects.all()
     permission_classes = [IsAuthenticated]
     serializer_class = OrderCountSerializer
@@ -121,32 +158,20 @@ class OrderCountView(APIView):
         if "completed" in request.path:
             return Response({"completed_order_count": completed_count})
         return Response({"order_count": in_progress_count})
-    
+
 
 class ReviewViewSet(viewsets.ModelViewSet):
-    queryset = Review.objects.all()
-    serializer_class = ReviewSerializer
+    """
+    ViewSet for Reviews.
 
-    def get_permissions(self):
-        if self.action == 'list':
-            permission_classes = [IsAuthenticated]
-        elif self.action == 'create':
-            permission_classes = [IsAuthenticated, IsTypeCustomer]
-        elif 'update' in self.action:
-            permission_classes = [IsAuthenticated, IsReviewOwnerAndForced404]
-        elif self.action == 'destroy':
-            permission_classes = [IsAuthenticated, IsReviewOwnerAndForced404]
-        else:
-            permission_classes = [IsSuperOrStaffUser]
-
-        return [permission() for permission in permission_classes]
-    
-
-class ReviewViewSet(viewsets.ModelViewSet):
+    Customers can create, update, and delete their own reviews.
+    Filtering available by business_user_id and reviewer_id.
+    """
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
 
     def get_queryset(self):
+        """Filter reviews based on query params."""
         queryset = Review.objects.all()
 
         business_user_id_param = self.request.query_params.get('business_user_id',None)
@@ -168,6 +193,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     
 
     def get_permissions(self):
+        """Return permissions depending on action."""
         if self.action == 'list':
             permission_classes = [IsAuthenticated]
         elif self.action == 'create':
@@ -183,10 +209,18 @@ class ReviewViewSet(viewsets.ModelViewSet):
     
 
     def retrieve(self, request, *args, **kwargs):
+        """Disable GET for single reviews."""
         raise MethodNotAllowed('GET')
     
 
 class BaseInfoApiView(APIView):
+    """
+    APIView to provide aggregated base information for the dashboard.
+
+    Returns review count, average rating, number of business profiles,
+    and number of offers.
+    """
+    
     def get(self, request):
         data = {
             "review_count": Review.objects.count(),

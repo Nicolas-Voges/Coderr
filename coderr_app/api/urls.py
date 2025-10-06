@@ -1,6 +1,12 @@
+"""
+API routing for the Coderr app using DRF routers and custom endpoints.
+"""
+
 from django.urls import path, include
-from .views import OfferViewSet, DetailRetrieveView, OrderViewSet, OrderCountView, ReviewViewSet, BaseInfoApiView
+
 from rest_framework import routers
+
+from .views import OfferViewSet, DetailRetrieveView, OrderViewSet, OrderCountView, ReviewViewSet, BaseInfoApiView
 
 router = routers.SimpleRouter()
 router.register(r'offers', OfferViewSet, basename='offers')

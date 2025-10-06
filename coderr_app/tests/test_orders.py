@@ -1,3 +1,9 @@
+"""
+Automated API tests for the Order endpoints.
+
+Covers creation, retrieval, update, deletion, and custom order detail views.
+"""
+
 from django.urls import reverse
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -6,7 +12,6 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from auth_app.tests.utils import (
-    create_test_image_file,
     create_test_user,
     create_test_users_token,
     create_test_users_profile,
@@ -16,8 +21,10 @@ from coderr_app.models import Order
 from .utils import create_offer, create_detail_set
 
 class OrdersTests(APITestCase):
+    """Integration tests for the Order API."""
 
     def setUp(self):
+        """Create test users, tokens, profiles, offer details, and one initial order."""
         self.expected_fields = {
             "id",
             "customer_user",
@@ -32,18 +39,24 @@ class OrdersTests(APITestCase):
             "created_at",
             "updated_at"
         }
+
+        # Business and customer users
         self.user_business = create_test_user()
         self.token_business = create_test_users_token(self.user_business)
         self.profile_business = create_test_users_profile(self.user_business)
         self.user_customer = create_test_user(username='customer')
         self.token_customer = create_test_users_token(self.user_customer)
         self.profile_customer = create_test_users_profile(self.user_customer, 'customer')
+
+        # Admin user
         self.user_admin = User.objects.create_superuser(
             username='admin',
             email='admin@example.com',
             password='adminpass123')
         self.token_admin = create_test_users_token(self.user_admin)
         self.profile_customer = create_test_users_profile(self.user_admin)
+
+        # Offer setup
         self.offer = create_offer(self.user_business)
         self.detail_basic, self.detail_standard, self.detail_premium = create_detail_set(self.offer.id)
         self.order = Order.objects.create(
@@ -54,6 +67,8 @@ class OrdersTests(APITestCase):
             created_at=timezone.now(),
             updated_at=None
         )
+
+        # Common URLs and payloads
         self.url_list = reverse('orders-list')
         self.url_detail = reverse('orders-detail', kwargs={'pk': self.order.pk})
         self.post_request_body = {
@@ -65,12 +80,13 @@ class OrdersTests(APITestCase):
 
 
     def tearDown(self):
+        """Clean up created image files."""
         delete_test_images()
 
 
     def test_post_success(self):
+        """Customer can successfully place an order."""
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token_customer.key)
-
         response = self.client.post(self.url_list, self.post_request_body, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -81,6 +97,7 @@ class OrdersTests(APITestCase):
 
 
     def test_post_fails(self):
+        """Order creation fails for invalid data or unauthorized users."""
         wrong_data = {
             "offer_detail_id": 'ä'
         }
@@ -101,6 +118,7 @@ class OrdersTests(APITestCase):
 
 
     def test_get_list_success(self):
+        """Authorized users can list their related orders."""
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token_business.key)
         response = self.client.get(self.url_list)
 
@@ -110,11 +128,13 @@ class OrdersTests(APITestCase):
 
 
     def test_get_list_fails(self):
+        """Unauthenticated users cannot access the order list."""
         response = self.client.get(self.url_list)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
     def test_patch_success(self):
+        """Business user can update order status."""
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token_business.key)
         response = self.client.patch(self.url_detail, self.patch_request_body, format='json')
 
@@ -124,6 +144,7 @@ class OrdersTests(APITestCase):
 
 
     def test_patch_fails(self):
+        """Patch requests fail for invalid status, unauthorized, or non-existing orders."""
         wrong_data = {
             'status': 'done'
         }
@@ -141,6 +162,7 @@ class OrdersTests(APITestCase):
 
 
     def test_delete(self):
+        """Only admin can delete orders."""
         cases = [
             (None, status.HTTP_401_UNAUTHORIZED),
             (self.token_business, status.HTTP_403_FORBIDDEN),
@@ -156,6 +178,7 @@ class OrdersTests(APITestCase):
 
 
     def test_get_detail_in_progress_success(self):
+        """Authorized user can view in-progress order details."""
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token_business.key)
         response = self.client.get(reverse('orders-detail-in_progress', kwargs={'pk': self.user_business.id}))
 
@@ -164,6 +187,7 @@ class OrdersTests(APITestCase):
 
 
     def test_get_detail_in_progress_fails(self):
+        """Fails when unauthorized or user ID does not exist."""
         response = self.client.get(reverse('orders-detail-in_progress', kwargs={'pk': self.user_business.id}))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token_business.key)
@@ -172,6 +196,7 @@ class OrdersTests(APITestCase):
 
 
     def test_get_detail_completed_success(self):
+        """Authorized user can view completed order statistics."""
         Order.objects.create(
             offer_detail=self.detail_basic,
             customer_user=self.user_customer,
@@ -188,6 +213,7 @@ class OrdersTests(APITestCase):
 
 
     def test_get_detail_completed_fails(self):
+        """Fails when unauthorized or user ID does not exist."""
         response = self.client.get(reverse('orders-detail-in_progress', kwargs={'pk': self.user_business.id}))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token_business.key)
