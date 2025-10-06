@@ -144,3 +144,33 @@ class ReviewsTests(APITestCase):
                 self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
             response = self.client.delete(self.url_detail)
             self.assertEqual(response.status_code, expected)
+
+
+    def test_patch_success(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token_customer.key)
+        response = self.client.patch(self.url_detail, self.patch_request_body, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(set(response.data.keys()), self.expected_fields)
+        self.assertEqual(response.data['rating'], self.patch_request_body['rating'])
+        self.assertEqual(response.data['description'], self.patch_request_body['description'])
+        self.assertEqual(response.data['reviewer'], self.user_customer.pk)
+        self.assertEqual(response.data['business_user'], self.user_business.pk)
+        self.assertIsInstance(response.data['updated_at'], str)
+
+
+    def test_patch_fails(self):
+        wrong_data = {
+            'rating': '5u'
+        }
+        cases = [
+            (self.url_detail, None, self.patch_request_body, status.HTTP_401_UNAUTHORIZED), 
+            (self.url_detail, self.token_business, self.patch_request_body, status.HTTP_403_FORBIDDEN),
+            (self.url_detail, self.token_customer, wrong_data, status.HTTP_400_BAD_REQUEST),
+            (reverse('reviews-detail', kwargs={'pk': 99999}), self.token_customer, self.patch_request_body, status.HTTP_404_NOT_FOUND)
+        ]
+        for url, token, data, expected in cases:
+            if token:
+                self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+            response = self.client.patch(url, data, format='json')
+            self.assertEqual(response.status_code, expected)
