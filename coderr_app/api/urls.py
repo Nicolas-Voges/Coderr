@@ -1,10 +1,11 @@
 from django.urls import path, include
-from .views import OfferViewSet, DetailRetrieveView, OrderViewSet, OrderCountView
+from .views import OfferViewSet, DetailRetrieveView, OrderViewSet, OrderCountView, ReviewViewSet
 from rest_framework import routers
 
 router = routers.SimpleRouter()
 router.register(r'offers', OfferViewSet, basename='offers')
 router.register(r'orders', OrderViewSet, basename='orders')
+router.register(r'reviews', ReviewViewSet, basename='reviews')
 
 urlpatterns = [
     path('', include(router.urls)),
