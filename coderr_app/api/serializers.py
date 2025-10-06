@@ -127,6 +127,8 @@ class OfferSerializer(serializers.ModelSerializer):
         details = validated_data.get('details')
         if details:
             for detail in details:
+                if not detail.get('offer_type'):
+                    raise serializers.ValidationError('Offer type is important!')
                 serializer = DetailSerializer(data=detail)
                 serializer.is_valid(raise_exception=True)
                 detail_instance = Detail.objects.get(offer_id=instance.id, offer_type=detail['offer_type'])
