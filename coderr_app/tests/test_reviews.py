@@ -130,3 +130,17 @@ class ReviewsTests(APITestCase):
     def test_get_list_fails(self):
         response = self.client.get(self.url_list)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+    def test_delete(self):
+        cases = [
+            (None, status.HTTP_401_UNAUTHORIZED),
+            (self.token_business, status.HTTP_403_FORBIDDEN),
+            (self.token_customer, status.HTTP_204_NO_CONTENT),
+            (self.token_customer, status.HTTP_404_NOT_FOUND)
+        ]
+        for token, expected in cases:
+            if token:
+                self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+            response = self.client.delete(self.url_detail)
+            self.assertEqual(response.status_code, expected)
