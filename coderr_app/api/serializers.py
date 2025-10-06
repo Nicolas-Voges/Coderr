@@ -359,3 +359,10 @@ class ReviewSerializer(serializers.ModelSerializer):
         instance.updated_at = timezone.now()
 
         return instance
+    
+
+class BaseInfoSerializer(serializers.Serializer):
+    review_count = serializers.IntegerField()
+    average_rating = serializers.FloatField()
+    business_profile_count = serializers.IntegerField()
+    offer_count = serializers.IntegerField()
