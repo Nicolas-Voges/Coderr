@@ -5,6 +5,8 @@ This module provides serializers to handle user registration,
 profile updates, and custom profile representations.
 """
 
+import re
+
 from django.contrib.auth.models import User
 from django.utils import timezone
 
@@ -44,6 +46,33 @@ class ProfileSerializer(serializers.ModelSerializer):
             "created_at",
             "uploaded_at"
         ]
+
+
+    def validate_tel(self, value):
+        """
+        Validate and normalize phone numbers.
+        Allowed characters: digits, spaces, '+', '-', and '/'.
+        """
+
+        # Validate allowed characters
+        if not re.fullmatch(r'^[\d\s\-\+/]+$', value):
+            raise serializers.ValidationError(
+                "Invalid format: only digits, spaces, '+', '-', and '/' are allowed."
+            )
+
+        # Normalize: remove everything except digits and '+'
+        normalized = re.sub(r'[^\d+]', '', value)
+
+        # '+' must appear only once and only at the beginning
+        if normalized.count('+') > 1 or (normalized and not normalized.startswith('+') and '+' in normalized):
+            raise serializers.ValidationError("Invalid format: '+' is only allowed once at the beginning.")
+
+        # Ensure minimum length (after removing all non-digits)
+        digits_only = re.sub(r'\D', '', normalized)
+        if len(digits_only) < 5:
+            raise serializers.ValidationError("Phone number is too short.")
+
+        return normalized
 
 
     def set_null_to_empty_str(self, value):
