@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import MethodNotAllowed
 from auth_app.models import Profile
 from coderr_app.models import Offer, Detail, Order, Review
-from .serializers import OfferSerializer, DetailSerializer, OrderSerializer, OrderCountSerializer, ReviewSerializer
+from .serializers import OfferSerializer, DetailSerializer, OrderSerializer, OrderCountSerializer, ReviewSerializer, BaseInfoSerializer
 from .permissions import IsTypeBusiness, IsTypeCustomer, IsTypeCustomerAndForced404, IsOfferOwner, IsSuperOrStaffUser, IsOrderOwner, IsReviewOwnerAndForced404
 from .paginations import ResultsSetPagination
 
@@ -184,3 +184,15 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         raise MethodNotAllowed('GET')
+    
+
+class BaseInfoApiView(APIView):
+    def get(self, request):
+        data = {
+            "review_count": Review.objects.count(),
+            "average_rating": Review.objects.aggregate(avg=Avg("rating"))["avg"] or 0,
+            "business_profile_count": Profile.objects.filter(type='business').count(),
+            "offer_count": Offer.objects.count(),
+        }
+        serializer = BaseInfoSerializer(data)
+        return Response(serializer.data)
