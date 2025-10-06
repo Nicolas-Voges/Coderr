@@ -90,3 +90,43 @@ class ReviewsTests(APITestCase):
                 self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
             response = self.client.post(self.url_list, data, format='json')
             self.assertEqual(response.status_code, expected)
+
+
+    def test_get_list_success(self):
+        Review.objects.create(
+            business_user=self.user_business,
+            reviewer=self.user_customer_2,
+            rating=1,
+            description='Test!',
+            created_at=timezone.now()
+        )
+        Review.objects.create(
+            business_user=self.user_business_2,
+            reviewer=self.user_customer,
+            rating=3,
+            description='Test!',
+            created_at=timezone.now()
+        )
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token_business.key)
+        response = self.client.get(self.url_list)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(set(response.data[0].keys()), self.expected_fields)
+
+        param_tests = [
+            ({'business_user_id': self.user_business.pk}, lambda reviews: all(review['business_user'] == self.user_business.pk for review in reviews), 2),
+            ({'reviewer_id': self.user_customer.pk}, lambda reviews: all(review['reviewer'] <= self.user_customer.pk for review in reviews), 2),
+            ({'ordering': 'rating'}, lambda reviews: [review['rating'] for review in reviews] == sorted([review['rating'] for review in reviews]), 3),
+            ({'ordering': 'created_at'}, lambda reviews: [review['created_at'] for review in reviews] == sorted([review['created_at'] for review in reviews]), 3)
+        ]
+
+        for params, check, lenght in param_tests:
+            response = self.client.get(self.url_list, params)
+            reviews = response.data
+            self.assertEqual(len(reviews), lenght, f"Param test returned no offers for params: {params}")
+            self.assertTrue(check(reviews))
+
+    
+    def test_get_list_fails(self):
+        response = self.client.get(self.url_list)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
