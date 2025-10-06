@@ -139,3 +139,47 @@ class ReviewViewSet(viewsets.ModelViewSet):
             permission_classes = [IsSuperOrStaffUser]
 
         return [permission() for permission in permission_classes]
+    
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+
+    def get_queryset(self):
+        queryset = Review.objects.all()
+
+        business_user_id_param = self.request.query_params.get('business_user_id',None)
+        if business_user_id_param is not None:
+            queryset = queryset.filter(business_user_id=business_user_id_param)
+
+        reviewer_id_param = self.request.query_params.get('reviewer_id',None)
+        if reviewer_id_param is not None:
+            queryset = queryset.filter(reviewer_id=reviewer_id_param)
+
+        ordering_param = self.request.query_params.get('ordering',None)
+        if ordering_param is not None:
+            if ordering_param == 'created_at':
+                queryset = queryset.order_by(ordering_param)
+            elif ordering_param == 'rating':
+                queryset = queryset.order_by('rating')
+
+        return queryset
+    
+
+    def get_permissions(self):
+        if self.action == 'list':
+            permission_classes = [IsAuthenticated]
+        elif self.action == 'create':
+            permission_classes = [IsAuthenticated, IsTypeCustomer]
+        elif 'update' in self.action:
+            permission_classes = [IsAuthenticated, IsReviewOwnerAndForced404]
+        elif self.action == 'destroy':
+            permission_classes = [IsAuthenticated, IsReviewOwnerAndForced404]
+        else:
+            permission_classes = [IsSuperOrStaffUser]
+
+        return [permission() for permission in permission_classes]
+    
+
+    def retrieve(self, request, *args, **kwargs):
+        raise MethodNotAllowed('GET')
