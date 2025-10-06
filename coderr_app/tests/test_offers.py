@@ -236,10 +236,27 @@ class OffersTests(APITestCase):
                 }
             ]
         }
+        wrong_data_2 = {
+            "title": "Updated Grafikdesign-Paket",
+            "details": [
+                {
+                    "title": "Basic Design Updated",
+                    "revisions": 3,
+                    "delivery_time_in_days": self.updated_delivery_time,
+                    "price": self.updated_price,
+                    "features": [
+                        "Logo Design",
+                        "Flyer"
+                    ]
+                }
+            ]
+        }
+
         cases = [
             (self.url_detail, None, self.patch_request_body, status.HTTP_401_UNAUTHORIZED), 
             (self.url_detail, self.second_token.key, self.patch_request_body, status.HTTP_403_FORBIDDEN),
             (self.url_detail, self.token.key, wrong_data, status.HTTP_400_BAD_REQUEST),
+            (self.url_detail, self.token.key, wrong_data_2, status.HTTP_400_BAD_REQUEST),
             (reverse('offers-detail', kwargs={'pk': 9999}), self.token.key, self.patch_request_body, status.HTTP_404_NOT_FOUND)
         ]
         for url, token, data, expected in cases:

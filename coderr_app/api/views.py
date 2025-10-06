@@ -12,7 +12,7 @@ from rest_framework.exceptions import NotFound
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import MethodNotAllowed
+from rest_framework.exceptions import MethodNotAllowed, ValidationError
 
 from auth_app.models import Profile
 from coderr_app.models import Offer, Detail, Order, Review
@@ -64,7 +64,11 @@ class OfferViewSet(viewsets.ModelViewSet):
 
         max_delivery_time_param = self.request.query_params.get('max_delivery_time',None)
         if max_delivery_time_param is not None:
-            queryset = queryset.filter(details__delivery_time_in_days__lte=max_delivery_time_param)
+            try:
+                max_delivery_time = int(max_delivery_time_param)
+            except:
+                raise ValidationError({"max_delivery_time": f"Invalid value: {max_delivery_time_param}. Must be an integer."})
+            queryset = queryset.filter(details__delivery_time_in_days__lte=max_delivery_time)
 
         ordering_param = self.request.query_params.get('ordering',None)
         if ordering_param is not None:
@@ -72,7 +76,8 @@ class OfferViewSet(viewsets.ModelViewSet):
                 queryset = queryset.order_by(ordering_param)
             elif ordering_param == 'min_price':
                 queryset = queryset.order_by('details__price')
-
+            else:
+                raise ValidationError({"ordering": f"Invalid ordering parameter: {ordering_param}"})
 
         search_param = self.request.query_params.get('search',None) 
         if search_param is not None:
