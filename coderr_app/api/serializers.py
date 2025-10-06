@@ -97,7 +97,7 @@ class OfferSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         user = request.user
         created_at = timezone.now()
-        updated_at = None
+        updated_at = timezone.now()
 
         offer = Offer.objects.create(
             user=user,
@@ -284,7 +284,7 @@ class OrderSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         user = request.user
         created_at = timezone.now()
-        updated_at = None
+        updated_at = timezone.now()
         detail = validated_data['offer_detail']
         offer = Offer.objects.get(id=detail.offer_id)
 
@@ -360,7 +360,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         if Review.objects.filter(business_user=validated_data['business_user'], reviewer=reviewer).exists():
             raise serializers.ValidationError('You have already reviewed this business user!')
         created_at = timezone.now()
-        updated_at = None
+        updated_at = timezone.now()
 
         review = Review.objects.create(
             reviewer=reviewer,

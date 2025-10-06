@@ -65,7 +65,7 @@ class OrdersTests(APITestCase):
             business_user=self.user_business,
             status='in_progress',
             created_at=timezone.now(),
-            updated_at=None
+            updated_at=timezone.now()
         )
 
         # Common URLs and payloads

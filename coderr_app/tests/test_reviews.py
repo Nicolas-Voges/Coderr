@@ -57,7 +57,8 @@ class ReviewsTests(APITestCase):
             reviewer=self.user_customer,
             rating=4,
             description='Test!',
-            created_at=timezone.now()
+            created_at=timezone.now(),
+            updated_at=timezone.now()
         )
 
         # Common URLs and payloads
@@ -89,7 +90,7 @@ class ReviewsTests(APITestCase):
         self.assertEqual(response.data['description'], self.post_request_body['description'])
         self.assertIsInstance(response.data['rating'], int)
         self.assertEqual(set(response.data.keys()), self.expected_fields)
-        self.assertEqual(response.data['updated_at'], None)
+        self.assertIsInstance(response.data['updated_at'], str)
 
 
     def test_post_fails(self):
