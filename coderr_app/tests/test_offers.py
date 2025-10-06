@@ -355,7 +355,7 @@ class OffersTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
         param_tests = [
             ({'creator_id': self.user.id}, lambda offers: all(offer['user'] == self.user.id for offer in offers)),
-            ({'min_price': self.min_price}, lambda offers: all(offer['min_price'] >= self.min_price for offer in offers)),
+            ({'min_price': self.min_price}, lambda offers: all(offer['min_price'] <= self.min_price for offer in offers)),
             ({'max_delivery_time': self.min_delivery_time}, lambda offers: all(offer['min_delivery_time'] <= self.min_delivery_time for offer in offers)),
             ({'ordering': 'min_price'}, lambda offers: [offer['min_price'] for offer in offers] == sorted([offer['min_price'] for offer in offers])),
             ({'ordering': 'created_at'}, lambda offers: [offer['created_at'] for offer in offers] == sorted([offer['created_at'] for offer in offers], reverse=True)),

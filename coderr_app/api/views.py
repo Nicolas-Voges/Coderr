@@ -60,7 +60,7 @@ class OfferViewSet(viewsets.ModelViewSet):
 
         min_price_param = self.request.query_params.get('min_price',None)
         if min_price_param is not None:
-            queryset = queryset.filter(details__price__lte=min_price_param)
+            queryset = queryset.filter(details__price__gte=min_price_param)
 
         max_delivery_time_param = self.request.query_params.get('max_delivery_time',None)
         if max_delivery_time_param is not None:
