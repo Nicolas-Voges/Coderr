@@ -12,11 +12,22 @@ from rest_framework.exceptions import NotFound
 from rest_framework.permissions import BasePermission
 
 from auth_app.models import Profile
-from coderr_app.models import Detail
+from coderr_app.models import Detail, Review
 
 class IsTypeBusiness(BasePermission):
     """Checks if the user has a business profile."""
     def has_permission(self, request, view):
+        """Returns True if the user's profile type is business."""
+        user_type = Profile.objects.get(user=request.user).type
+        return user_type == 'business'
+    
+
+class IsTypeBusinessObjPermission(BasePermission):
+    """
+    Checks if the user has a business profile.
+    Raises NotFound if the detail does not exist.
+    """
+    def has_object_permission(self, request, view, obj):
         """Returns True if the user's profile type is business."""
         user_type = Profile.objects.get(user=request.user).type
         return user_type == 'business'
@@ -74,9 +85,9 @@ class IsReviewOwnerAndForced404(BasePermission):
     def has_object_permission(self, request, view, obj):
         """Returns True if the user is the reviewer. Raises NotFound if review ID invalid."""
         pk = view.kwargs.get('pk')
-        if isinstance(id, int) and id > 0:
+        if isinstance(id, int) and pk > 0:
             try:
-                Detail.objects.get(id=pk)
-            except Detail.DoesNotExist:
+                Review.objects.get(id=pk)
+            except Review.DoesNotExist:
                 raise NotFound
         return request.user == obj.reviewer

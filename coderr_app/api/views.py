@@ -19,7 +19,7 @@ from coderr_app.models import Offer, Detail, Order, Review
 from .serializers import OfferSerializer, DetailSerializer,\
     OrderSerializer, OrderCountSerializer, ReviewSerializer, BaseInfoSerializer
 from .permissions import IsTypeBusiness, IsTypeCustomer, IsTypeCustomerAndForced404,\
-    IsOfferOwner, IsSuperOrStaffUser, IsOrderOwner, IsReviewOwnerAndForced404
+    IsOfferOwner, IsSuperOrStaffUser, IsOrderOwner, IsReviewOwnerAndForced404, IsTypeBusinessObjPermission
 from .paginations import ResultsSetPagination
 
 class OfferViewSet(viewsets.ModelViewSet):
@@ -129,7 +129,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         elif self.action == 'create':
             permission_classes = [IsAuthenticated, IsTypeCustomerAndForced404]
         elif 'update' in self.action:
-            permission_classes = [IsAuthenticated, IsTypeBusiness, IsOrderOwner]
+            permission_classes = [IsAuthenticated, IsTypeBusinessObjPermission, IsOrderOwner]
         elif self.action == 'destroy':
             permission_classes = [IsSuperOrStaffUser]
         else:
@@ -225,7 +225,7 @@ class BaseInfoApiView(APIView):
     Returns review count, average rating, number of business profiles,
     and number of offers.
     """
-    
+
     def get(self, request):
         data = {
             "review_count": Review.objects.count(),
