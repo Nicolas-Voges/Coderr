@@ -51,6 +51,10 @@ class OfferSerializer(serializers.ModelSerializer):
     min_price = serializers.DecimalField(read_only=True, max_digits=10, decimal_places=2)
     min_delivery_time = serializers.IntegerField(read_only=True)
 
+    image = serializers.ImageField(
+        required=False,
+        allow_null=True
+    )
 
     class Meta:
         model = Offer
@@ -142,11 +146,16 @@ class OfferSerializer(serializers.ModelSerializer):
         instance.title = validated_data.get('title', instance.title)
         instance.description = validated_data.get('description', instance.description)
 
-        if validated_data.get('image'):
+        new_image = validated_data.get('image')
+
+
+        if new_image:
             old_image = instance.image
-            instance.image = validated_data.get('image')
-            if os.path.isfile(old_image.path):
-                os.remove(old_image.path)
+
+            if old_image and old_image.name:
+                old_image.delete(save=False)
+
+            instance.image = new_image
 
         instance.updated_at = timezone.now()
         instance.save()

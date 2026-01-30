@@ -24,7 +24,7 @@ class Profile(models.Model):
     """
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    file = models.ImageField(upload_to='user_images/')
+    file = models.ImageField(upload_to='user_images/', null=True, blank=True)
     location = models.CharField(max_length=30)
     tel = models.CharField(max_length=50)
     description = models.CharField(max_length=255)

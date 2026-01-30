@@ -54,16 +54,17 @@ class OfferViewSet(viewsets.ModelViewSet):
         """Return filtered queryset based on query params."""
         queryset = Offer.objects.all()
 
-        creator_id_param = self.request.query_params.get('creator_id',None)
-        if creator_id_param is not None:
-            queryset = queryset.filter(user_id=creator_id_param)
+        creator_id_param = self.request.query_params.get('creator_id')
+
+        if creator_id_param and creator_id_param.isdigit():
+            queryset = queryset.filter(user_id=int(creator_id_param))
 
         min_price_param = self.request.query_params.get('min_price',None)
-        if min_price_param is not None:
+        if min_price_param:
             queryset = queryset.filter(details__price__gte=min_price_param)
 
         max_delivery_time_param = self.request.query_params.get('max_delivery_time',None)
-        if max_delivery_time_param is not None:
+        if max_delivery_time_param:
             try:
                 max_delivery_time = int(max_delivery_time_param)
             except:
@@ -71,7 +72,7 @@ class OfferViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(details__delivery_time_in_days__lte=max_delivery_time)
 
         ordering_param = self.request.query_params.get('ordering',None)
-        if ordering_param is not None:
+        if ordering_param:
             if ordering_param == 'created_at':
                 queryset = queryset.order_by(ordering_param)
             elif ordering_param == 'min_price':
@@ -80,7 +81,7 @@ class OfferViewSet(viewsets.ModelViewSet):
                 raise ValidationError({"ordering": f"Invalid ordering parameter: {ordering_param}"})
 
         search_param = self.request.query_params.get('search',None) 
-        if search_param is not None:
+        if search_param:
             queryset = queryset.filter(
                 Q(title__icontains=search_param) | Q(description__icontains=search_param)
             )
