@@ -5,6 +5,7 @@ Includes viewsets for CRUD operations, custom queryset filtering,
 and aggregated base information endpoints.
 """
 
+from django.contrib.auth.models import User
 from django.db.models import Q, Avg
 
 from rest_framework import viewsets, generics
@@ -157,7 +158,7 @@ class OrderCountView(APIView):
     serializer_class = OrderCountSerializer
 
     def get(self, request, pk):
-        if not Order.objects.filter(business_user_id=pk).exists():
+        if not User.objects.filter(id=pk).exists():
             raise NotFound
         in_progress_count = Order.objects.filter(business_user_id=pk, status="in_progress").count()
         completed_count = Order.objects.filter(business_user_id=pk, status="completed").count()
