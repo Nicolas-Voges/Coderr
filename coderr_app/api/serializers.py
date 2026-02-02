@@ -332,21 +332,6 @@ class OrderCountSerializer(serializers.ModelSerializer):
     
 
 class ReviewSerializer(serializers.ModelSerializer):
-    """Serializer for reviews."""
-    class Meta:
-        model = Review
-        fields = [
-            'id',
-            'business_user',
-            'reviewer',
-            'rating',
-            'description',
-            'created_at',
-            'updated_at'
-        ]
-
-
-class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = [
@@ -390,6 +375,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         instance.rating = validated_data.get('rating', instance.rating)
         instance.description = validated_data.get('description', instance.description)
         instance.updated_at = timezone.now()
+        instance.save()
 
         return instance
     
